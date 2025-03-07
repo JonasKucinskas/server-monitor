@@ -127,7 +127,7 @@ public class SshConnection
 
 
             string json = JsonConvert.SerializeObject(package);
-            
+            Console.WriteLine(json);
             try
             {
                 Console.WriteLine("Sending data");

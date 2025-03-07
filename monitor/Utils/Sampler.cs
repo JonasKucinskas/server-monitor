@@ -92,7 +92,7 @@ public class Sampler
                 Task.Run(() => disk.ClearMetrics()),
                 Task.Run(() => sensors.ClearMetrics())
             );
-        }, TimeSpan.FromSeconds(30));
+        }, TimeSpan.FromSeconds(1));
 
         periodicTask.Start();
     }
