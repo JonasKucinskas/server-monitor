@@ -1,8 +1,13 @@
 using Npgsql;
-using System;
-using System.Threading.Tasks;
 
-public class CpuCore
+public class Cpu
+{
+    public string Name { get; set; }
+    public List<CoreMetrics> Cores { get; set; }
+    public double Freq { get; set; }
+}
+
+public class CoreMetrics
 {
     public string CoreName { get; set; }
     public double Total { get; set; }
@@ -18,7 +23,7 @@ public class CpuCore
     public async Task InsertToDatabase(NpgsqlConnection conn, DateTime time, string serverId)
     {
         await using var cmd = new NpgsqlCommand(@"
-            INSERT INTO cpu_cores (time, server_id, core_name, total, ""user"", nice, system, idle, iowait, irq, softirq, steal)
+            INSERT INTO core_metrics (time, server_id, core_name, total, c_user, nice, system, idle, io_wait, irq, soft_irq, steal)
             VALUES (@time, @serverId, @coreName, @total, @user, @nice, @system, @idle, @iowait, @irq, @softirq, @steal);
         ", conn);
 
@@ -34,7 +39,7 @@ public class CpuCore
         cmd.Parameters.AddWithValue("irq", IRQ);
         cmd.Parameters.AddWithValue("softirq", SoftIRQ);
         cmd.Parameters.AddWithValue("steal", Steal);
-
+        
         await cmd.ExecuteNonQueryAsync();
     }
 }

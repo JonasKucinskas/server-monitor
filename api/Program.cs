@@ -1,35 +1,26 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Register services before calling Build
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVueApp",
-        policy => policy.WithOrigins("http://localhost:8080") // Vue dev server
-                        .AllowAnyMethod()
-                        .AllowAnyHeader());
+    options.AddPolicy("AllowAll", builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-builder.Services.AddControllers(); // Registering controllers
+builder.Services.AddControllers(); 
 
-var app = builder.Build(); // Build the application
+var connectionString = builder.Configuration.GetConnectionString("TimescaleDb");
+// Register Database service with connection string
+builder.Services.AddScoped<Database>(provider => new Database(connectionString));
 
-// Use middleware after Build
-app.UseCors("AllowVueApp");
-app.MapControllers();
+var app = builder.Build(); 
 
-// Key generation logic
+app.UseCors("AllowAll");
+
 if (!File.Exists("privateKey.pem") || !File.Exists("publicKey.pub"))
 {
-    KeyGen.GenerateKeyPair(); // Generate keys on first run
+    KeyGen.GenerateKeyPair(); 
 }
 
 // Connect to SSH agent
-
 string agentIp = "localhost"; 
 int agentPort = 12345; 
 string username = "monitor"; 
@@ -38,12 +29,5 @@ int intervalInSeconds = 5;
 var sshConnection = new SshConnection(agentIp, agentPort, username);
 sshConnection.Connect();
 sshConnection.StartSendingRequests(intervalInSeconds);
-
-app.MapPost("/api/endpoint", async (HttpContext context) =>
-{
-    var data = await context.Request.ReadFromJsonAsync<object>();
-    Console.WriteLine($"Received: {JsonSerializer.Serialize(data)}");
-    return Results.Ok("Data received successfully!");
-});
-
+app.MapControllers();
 app.Run("http://localhost:9000");

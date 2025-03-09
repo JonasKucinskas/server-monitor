@@ -11,10 +11,10 @@ public class Network
 public class NetworkMetric
 {
     //b/s
-    public string Name;
-    public long Upload;
-    public long Download;
-    public NetworkInterfaceData Iface;
+    public string Name { get; set; }
+    public long Upload { get; set; }
+    public long Download { get; set; }
+    public NetworkInterfaceData Iface { get; set; }
     public NetworkMetric()
     {
         
@@ -54,23 +54,22 @@ public class NetworkMetric
 }
 public class NetworkInterfaceData
 {
-    public string Name { get; private set; }
     // Receive columns
-    public long ReceiveBytes { get; private set; }
-    public long ReceivePackets { get; private set; }
-    public long ReceiveErrs { get; private set; }
-    public long ReceiveDrop { get; private set; }
-    public long ReceiveFifo { get; private set; }
-    public long ReceiveFrame { get; private set; }
-    public long ReceiveCompressed { get; private set; }
-    public long ReceiveMulticast { get; private set; }
+    public long ReceiveBytes { get; set; }
+    public long ReceivePackets { get; set; }
+    public long ReceiveErrs { get; set; }
+    public long ReceiveDrop { get; set; }
+    public long ReceiveFifo { get; set; }
+    public long ReceiveFrame { get; set; }
+    public long ReceiveCompressed { get; set; }
+    public long ReceiveMulticast { get; set; }
     // Transmit columns
-    public long TransmitBytes { get; private set; }
-    public long TransmitPackets { get; private set; }
-    public long TransmitErrs { get; private set; }
-    public long TransmitDrop { get; private set; }
-    public long TransmitFifo { get; private set; }
-    public long TransmitColls { get; private set; }
-    public long TransmitCarrier { get; private set; }
-    public long TransmitCompressed { get; private set; }
+    public long TransmitBytes { get; set; }
+    public long TransmitPackets { get; set; }
+    public long TransmitErrs { get; set; }
+    public long TransmitDrop { get; set; }
+    public long TransmitFifo { get; set; }
+    public long TransmitColls { get; set; }
+    public long TransmitCarrier { get; set; }
+    public long TransmitCompressed { get; set; }
 }

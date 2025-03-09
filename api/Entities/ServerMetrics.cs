@@ -27,16 +27,13 @@ public class ServerMetrics
     public long RamSwapTotal { get; set; }
     public long RamSwapFree { get; set; }
     public long RamSwapUsed { get; set; }
-    public SensorList SensorList { get; set; }
-    public List<CpuCore> CpuCores { get; set; } = new();
+    public List<Sensor> SensorList { get; set; } = new();
+    public List<CoreMetrics> CpuCores { get; set; } = new();
     public List<DiskPartition> DiskPartitions { get; set; } = new();
     public List<NetworkMetric> NetworkMetrics { get; set; } = new();
 
-    public async Task InsertToDatabase(string connectionString)
+    public async Task InsertToDatabase(NpgsqlConnection conn)
     {
-        await using var conn = new NpgsqlConnection(connectionString);
-        await conn.OpenAsync();
-
         await using var cmd = new NpgsqlCommand(@"
             INSERT INTO server_metrics (time, server_id, cpu_name, cpu_freq, battery_name, battery_capacity, battery_status, disk_total_space, disk_used_space, disk_free_space, ram_mem_total, ram_mem_free, ram_mem_used, ram_mem_available, ram_buffers, ram_cached, ram_swap_total, ram_swap_free, ram_swap_used)
             VALUES (@time, @serverId, @cpuName, @cpuFreq, @batteryName, @batteryCapacity, @batteryStatus, @diskTotalSpace, @diskUsedSpace, @diskFreeSpace, @ramMemTotal, @ramMemFree, @ramMemUsed, @ramMemAvailable, @ramBuffers, @ramCached, @ramSwapTotal, @ramSwapFree, @ramSwapUsed);
@@ -79,9 +76,11 @@ public class ServerMetrics
             await network.InsertToDatabase(conn, Time, ServerId);
         }
 
-        foreach (var sensor in SensorList.Sensors)
+        foreach (var sensor in SensorList)
         {
             await sensor.InsertToDatabase(conn, Time, ServerId);
         }
+
+        Console.WriteLine(DateTime.Now + ": Data inserted into the database");
     }
 }

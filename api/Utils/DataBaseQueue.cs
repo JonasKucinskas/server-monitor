@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
 
 public class DatabaseQueue<T>
 {
@@ -13,35 +10,35 @@ public class DatabaseQueue<T>
     public DatabaseQueue(Func<T, Task> processItemAsync)
     {
         _processItemAsync = processItemAsync ?? throw new ArgumentNullException(nameof(processItemAsync));
-        Task.Run(ProcessQueueAsync); // Start background processing
+        Task.Run(ProcessQueueAsync); 
     }
 
     public void Enqueue(T item)
     {
         _queue.Enqueue(item);
-        _signal.Release(); // Signal that a new item is available
+        _signal.Release(); 
     }
 
     private async Task ProcessQueueAsync()
     {
         while (!_cts.Token.IsCancellationRequested)
         {
-            await _signal.WaitAsync(_cts.Token); // Wait for new items
+            await _signal.WaitAsync(_cts.Token);
 
             while (_queue.TryDequeue(out T item))
             {
                 if (_cts.Token.IsCancellationRequested)
-                    return; // Exit if cancellation was requested
+                    return;
 
                 if (item == null)
                 {
                     Console.WriteLine("Encountered a null item in the queue.");
-                    continue; // Skip this iteration if the item is null
+                    continue;
                 }
 
                 try
                 {
-                    await _processItemAsync(item); // Process the item (e.g., insert into database)
+                    await _processItemAsync(item); 
                 }
                 catch (Exception ex)
                 {
@@ -53,7 +50,7 @@ public class DatabaseQueue<T>
 
     public async Task StopAsync()
     {
-        _cts.Cancel(); // Graceful shutdown
-        await Task.WhenAny(Task.Delay(-1), ProcessQueueAsync()); // Wait until the queue processing finishes or the task is cancelled
+        _cts.Cancel(); 
+        await Task.WhenAny(Task.Delay(-1), ProcessQueueAsync()); 
     }
 }

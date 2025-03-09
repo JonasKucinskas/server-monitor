@@ -125,9 +125,10 @@ public class SshConnection
                 SensorList = sensorListTask.Result
             };
 
-
             string json = JsonConvert.SerializeObject(package);
-            Console.WriteLine(json);
+            
+            //Console.WriteLine(json);
+            
             try
             {
                 Console.WriteLine("Sending data");

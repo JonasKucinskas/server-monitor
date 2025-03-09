@@ -19,7 +19,7 @@ public class SshConnection
         _username = username;
         _databaseQueue = new DatabaseQueue<DataPackage>(async (data) =>
         {
-            var repo = new Database("Host=localhost;Port=5432;Username=postgres;Password=password;Database=postgres;");
+            var repo = new Database("Host=localhost;Port=5432;Username=postgres;Password=password;Database=monitor");
             await repo.InsertServerMetricsAsync(data); 
         });
     }
@@ -51,8 +51,6 @@ public class SshConnection
             {
                 using (SshCommand cmd = _sshClient.RunCommand("echo 'dataRequest'"))
                 {
-                    //deserealise to original data structure
-
                     DataPackage data = Deserealizer.Deserealize(cmd.Result);
                     //Console.WriteLine(data.SensorList.Sensors[0].Name); 
                     //Console.WriteLine(data.SensorList.Sensors[0].value); 

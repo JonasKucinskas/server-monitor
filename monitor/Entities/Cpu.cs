@@ -16,8 +16,6 @@ namespace monitor
             this.Name = GetCpuName();
         }
 
-        
-
         public void ClearMetrics()
         {
             this.Cores = [];

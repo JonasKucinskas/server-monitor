@@ -1,6 +1,6 @@
 using monitor;
 
-public class DataPackage()
+public class DataPackage
 {
     required public Cpu Cpu {get; set;}
     required public Battery Battery {get; set;}
