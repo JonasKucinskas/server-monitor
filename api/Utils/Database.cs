@@ -16,6 +16,7 @@ public class Database
         {
             await conn.OpenAsync();
         }
+
         var serverMetricsList = new List<ServerMetrics>();
 
         string serverMetricsQuery = @"
@@ -32,56 +33,83 @@ public class Database
         cmd.Parameters.AddWithValue("serverId", serverId);
         cmd.Parameters.AddWithValue("startTime", startTime);
         cmd.Parameters.AddWithValue("endTime", endTime);
-        
-        var serverMetrics = new ServerMetrics();
+
         await using var reader = await cmd.ExecuteReaderAsync();
+
+        try
         {
-            try
+            while (await reader.ReadAsync())
             {
-                while (await reader.ReadAsync())
+                // Create a new ServerMetrics object for each row in the result
+                var serverMetrics = new ServerMetrics
                 {
-                    serverMetrics.Time = reader.GetDateTime(reader.GetOrdinal("time"));
-                    serverMetrics.ServerId = reader.GetString(reader.GetOrdinal("server_id"));
-                    serverMetrics.CpuName = reader.GetString(reader.GetOrdinal("cpu_name"));
-                    serverMetrics.CpuFreq = reader.GetDouble(reader.GetOrdinal("cpu_freq"));
-                    serverMetrics.BatteryName = reader.GetString(reader.GetOrdinal("battery_name"));
-                    serverMetrics.BatteryCapacity = reader.GetInt32(reader.GetOrdinal("battery_capacity"));
-                    serverMetrics.BatteryStatus = reader.GetString(reader.GetOrdinal("battery_status"));
-                    serverMetrics.DiskTotalSpace = reader.GetInt64(reader.GetOrdinal("disk_total_space"));
-                    serverMetrics.DiskUsedSpace = reader.GetInt64(reader.GetOrdinal("disk_used_space"));
-                    serverMetrics.DiskFreeSpace = reader.GetInt64(reader.GetOrdinal("disk_free_space"));
-                    serverMetrics.RamMemTotal = reader.GetInt64(reader.GetOrdinal("ram_mem_total"));
-                    serverMetrics.RamMemFree = reader.GetInt64(reader.GetOrdinal("ram_mem_free"));
-                    serverMetrics.RamMemUsed = reader.GetInt64(reader.GetOrdinal("ram_mem_used"));
-                    serverMetrics.RamMemAvailable = reader.GetInt64(reader.GetOrdinal("ram_mem_available"));
-                    serverMetrics.RamBuffers = reader.GetInt64(reader.GetOrdinal("ram_buffers"));
-                    serverMetrics.RamCached = reader.GetInt64(reader.GetOrdinal("ram_cached"));
-                    serverMetrics.RamSwapTotal = reader.GetInt64(reader.GetOrdinal("ram_swap_total"));
-                    serverMetrics.RamSwapFree = reader.GetInt64(reader.GetOrdinal("ram_swap_free"));
-                    serverMetrics.RamSwapUsed = reader.GetInt64(reader.GetOrdinal("ram_swap_used"));
-                }
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
-            }
-            finally
-            {
-                await reader.CloseAsync();
+                    Time = reader.GetDateTime(reader.GetOrdinal("time")),
+                    ServerId = reader.GetString(reader.GetOrdinal("server_id")),
+                    CpuName = reader.GetString(reader.GetOrdinal("cpu_name")),
+                    CpuFreq = reader.GetDouble(reader.GetOrdinal("cpu_freq")),
+                    BatteryName = reader.GetString(reader.GetOrdinal("battery_name")),
+                    BatteryCapacity = reader.GetInt32(reader.GetOrdinal("battery_capacity")),
+                    BatteryStatus = reader.GetString(reader.GetOrdinal("battery_status")),
+                    DiskTotalSpace = reader.GetInt64(reader.GetOrdinal("disk_total_space")),
+                    DiskUsedSpace = reader.GetInt64(reader.GetOrdinal("disk_used_space")),
+                    DiskFreeSpace = reader.GetInt64(reader.GetOrdinal("disk_free_space")),
+                    RamMemTotal = reader.GetInt64(reader.GetOrdinal("ram_mem_total")),
+                    RamMemFree = reader.GetInt64(reader.GetOrdinal("ram_mem_free")),
+                    RamMemUsed = reader.GetInt64(reader.GetOrdinal("ram_mem_used")),
+                    RamMemAvailable = reader.GetInt64(reader.GetOrdinal("ram_mem_available")),
+                    RamBuffers = reader.GetInt64(reader.GetOrdinal("ram_buffers")),
+                    RamCached = reader.GetInt64(reader.GetOrdinal("ram_cached")),
+                    RamSwapTotal = reader.GetInt64(reader.GetOrdinal("ram_swap_total")),
+                    RamSwapFree = reader.GetInt64(reader.GetOrdinal("ram_swap_free")),
+                    RamSwapUsed = reader.GetInt64(reader.GetOrdinal("ram_swap_used"))
+                };
+
+                // Add the current object to the list
+                serverMetricsList.Add(serverMetrics);
             }
         }
-        
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        // Fetch additional metrics (sensor, cpu core, disk partitions, network, etc.)
+        foreach (var serverMetrics in serverMetricsList)
+        {
+            var sensorList = await FetchSensorDataAsync(serverId, serverMetrics.Time);
+            serverMetrics.SensorList = sensorList;
+
+            var cpuCoresList = await FetchCpuCoreDataAsync(serverId, serverMetrics.Time);
+            serverMetrics.CpuCores = cpuCoresList;
+
+            var diskPartitionsList = await FetchDiskPartitionDataAsync(serverId, serverMetrics.Time);
+            serverMetrics.DiskPartitions = diskPartitionsList;
+
+            var networkMetricsList = await FetchNetworkMetricsAsync(serverId, serverMetrics.Time);
+            serverMetrics.NetworkMetrics = networkMetricsList;
+        }
+
+        return serverMetricsList;
+    }
+
+    private async Task<List<Sensor>> FetchSensorDataAsync(string serverId, DateTime time)
+    {
+        var sensorList = new List<Sensor>();
+
         var sensorQuery = @"
             SELECT sensor_name, value
             FROM sensor_data
             WHERE server_id = @serverId AND time = @time;
         ";
-       
+
         await using var sensorCmd = new NpgsqlCommand(sensorQuery, conn);
         sensorCmd.Parameters.AddWithValue("serverId", serverId);
-        sensorCmd.Parameters.AddWithValue("time", serverMetrics.Time);
-        
-        var sensorList = new List<Sensor>();
+        sensorCmd.Parameters.AddWithValue("time", time);
+
         await using (var sensorReader = await sensorCmd.ExecuteReaderAsync())
         {
             try
@@ -104,19 +132,23 @@ public class Database
                 await sensorReader.CloseAsync();
             }
         }
-        serverMetrics.SensorList = sensorList;
-        
+        return sensorList;
+    }
+
+    private async Task<List<CoreMetrics>> FetchCpuCoreDataAsync(string serverId, DateTime time)
+    {
+        var cpuCoresList = new List<CoreMetrics>();
+
         var cpuCoresQuery = @"
             SELECT core_name, total, c_user, nice, system, idle, io_wait, irq, soft_irq, steal
             FROM core_metrics
             WHERE server_id = @serverId AND time = @time;
         ";
-        
+
         await using var cpuCoresCmd = new NpgsqlCommand(cpuCoresQuery, conn);
         cpuCoresCmd.Parameters.AddWithValue("serverId", serverId);
-        cpuCoresCmd.Parameters.AddWithValue("time", serverMetrics.Time);
-        
-        var cpuCoresList = new List<CoreMetrics>();
+        cpuCoresCmd.Parameters.AddWithValue("time", time);
+
         await using (var cpuCoresReader = await cpuCoresCmd.ExecuteReaderAsync())
         {
             try
@@ -147,19 +179,23 @@ public class Database
                 await cpuCoresReader.CloseAsync();
             }
         }
-        serverMetrics.CpuCores = cpuCoresList;
-        
+        return cpuCoresList;
+    }
+
+    private async Task<List<DiskPartition>> FetchDiskPartitionDataAsync(string serverId, DateTime time)
+    {
+        var diskPartitionsList = new List<DiskPartition>();
+
         var diskPartitionsQuery = @"
             SELECT partition_name, read_speed, write_speed, io_time, weighted_io_time
             FROM disk_partitions
             WHERE server_id = @serverId AND time = @time;
         ";
-        
+
         await using var diskPartitionsCmd = new NpgsqlCommand(diskPartitionsQuery, conn);
         diskPartitionsCmd.Parameters.AddWithValue("serverId", serverId);
-        diskPartitionsCmd.Parameters.AddWithValue("time", serverMetrics.Time);
-        
-        var diskPartitionsList = new List<DiskPartition>();
+        diskPartitionsCmd.Parameters.AddWithValue("time", time);
+
         await using (var diskPartitionsReader = await diskPartitionsCmd.ExecuteReaderAsync())
         {
             try
@@ -184,11 +220,14 @@ public class Database
             {
                 await diskPartitionsReader.CloseAsync();
             }
-            
         }
-            
-        serverMetrics.DiskPartitions = diskPartitionsList;
-        
+        return diskPartitionsList;
+    }
+
+    private async Task<List<NetworkMetric>> FetchNetworkMetricsAsync(string serverId, DateTime time)
+    {
+        var networkMetricsList = new List<NetworkMetric>();
+
         var networkMetricsQuery = @"
             SELECT interface_name, upload, download, receive_bytes, receive_packets, receive_errs, receive_drop, receive_fifo, receive_frame, receive_compressed, receive_multicast, 
             transmit_bytes, transmit_packets, transmit_errs, transmit_drop, transmit_fifo, transmit_colls, transmit_carrier, transmit_compressed
@@ -196,13 +235,10 @@ public class Database
             WHERE server_id = @serverId AND time = @time;
         ";
 
-
         await using var networkMetricsCmd = new NpgsqlCommand(networkMetricsQuery, conn);
         networkMetricsCmd.Parameters.AddWithValue("serverId", serverId);
-        networkMetricsCmd.Parameters.AddWithValue("time", serverMetrics.Time);
-        
-        var networkMetricsList = new List<NetworkMetric>();
-        
+        networkMetricsCmd.Parameters.AddWithValue("time", time);
+
         await using (var networkMetricsReader = await networkMetricsCmd.ExecuteReaderAsync())
         {
             try
@@ -228,7 +264,7 @@ public class Database
                         TransmitCarrier = networkMetricsReader.GetInt64(networkMetricsReader.GetOrdinal("transmit_carrier")),
                         TransmitCompressed = networkMetricsReader.GetInt64(networkMetricsReader.GetOrdinal("transmit_compressed"))
                     };
-                    
+
                     networkMetricsList.Add(new NetworkMetric
                     {
                         Name = networkMetricsReader.GetString(networkMetricsReader.GetOrdinal("interface_name")),
@@ -247,11 +283,7 @@ public class Database
                 await networkMetricsReader.CloseAsync();
             }
         }
-        
-        serverMetrics.NetworkMetrics = networkMetricsList;
-        serverMetricsList.Add(serverMetrics);
-
-        return serverMetricsList;
+        return networkMetricsList;
     }
 
     public async Task InsertServerMetricsAsync(DataPackage metrics)
