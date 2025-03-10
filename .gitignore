@@ -5,6 +5,7 @@
 
 .vscode/
 vue/
+vue/node_modules
 api/my_ssh_key
 api/my_ssh_key.pub
 api/privateKey.pem

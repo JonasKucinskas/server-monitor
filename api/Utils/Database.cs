@@ -293,6 +293,7 @@ public class Database
             await conn.OpenAsync();
         }
         await ConvertToDataBaseObjects(metrics).InsertToDatabase(conn);
+        await conn.CloseAsync();//this is reyatded
     }
 
     private static ServerMetrics ConvertToDataBaseObjects(DataPackage data)

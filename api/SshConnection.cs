@@ -24,67 +24,68 @@ public class SshConnection
         });
     }
 
-    public void Connect()
+    public async Task Connect()
     {
-        try
+        while (true)
         {
-            var privateKeyFile = new PrivateKeyFile("privateKey.pem");
-            var authenticationMethod = new PrivateKeyAuthenticationMethod(_username, privateKeyFile);
-            var connectionInfo = new Renci.SshNet.ConnectionInfo(_agentIpAddress, _agentPort, "monitor", authenticationMethod);
+            try
+            {
+                var privateKeyFile = new PrivateKeyFile("privateKey.pem");
+                var authenticationMethod = new PrivateKeyAuthenticationMethod(_username, privateKeyFile);
+                var connectionInfo = new Renci.SshNet.ConnectionInfo(_agentIpAddress, _agentPort, "monitor", authenticationMethod);
 
-            _sshClient = new SshClient(connectionInfo);
-            _sshClient.Connect();
+                _sshClient = new SshClient(connectionInfo);
+                _sshClient.Connect();
 
-            Console.WriteLine("SSH Client Connected!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error connecting to client: {ex.Message}");
+                Console.WriteLine("Connected to SSH server!");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now}: Error connecting to server: {ex.Message}. Retrying in 5 seconds...");
+            }
+
+            await Task.Delay(5000); 
         }
     }
+
 
     private void RequestData()
     {
         try
         {
-            if (_sshClient != null && _sshClient.IsConnected)
+            using (SshCommand cmd = _sshClient.RunCommand("echo 'dataRequest'"))
             {
-                using (SshCommand cmd = _sshClient.RunCommand("echo 'dataRequest'"))
-                {
-                    DataPackage data = Deserealizer.Deserealize(cmd.Result);
-                    //Console.WriteLine(data.SensorList.Sensors[0].Name); 
-                    //Console.WriteLine(data.SensorList.Sensors[0].value); 
-                    
-                    _databaseQueue.Enqueue(data);
-                }
-            }
-            else
-            {
-                Console.WriteLine("SSH Client is not connected!");
+                DataPackage data = Deserealizer.Deserealize(cmd.Result);
+                _databaseQueue.Enqueue(data);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error requesting data: {ex.Message}");
+            Console.WriteLine($"{DateTime.Now}: Error requesting data: {ex.Message}");
         }
     }
 
-    public void StartSendingRequests(int intervalInSeconds)
+    public async Task StartSendingRequests(int intervalInSeconds)
     {
         _currentIntervalInSeconds = intervalInSeconds;
+        bool _isReconnecting = false;
 
-        if (_sshClient == null || !_sshClient.IsConnected)
+        _timer = new Timer(async _ =>
         {
-            Console.WriteLine("client not connected to server");
-            return;
-        }
+            if (_isReconnecting) return;
+            if (_sshClient == null || !_sshClient.IsConnected)
+            {
+                _isReconnecting = true;
+                await Connect();
+                _isReconnecting = false;
+            }
 
-        _timer = new Timer(
-            e => RequestData(),
-            null,
-            TimeSpan.FromSeconds(_currentIntervalInSeconds), 
-            TimeSpan.FromSeconds(_currentIntervalInSeconds) 
-        );
+            RequestData();
+        }, 
+        null,
+        TimeSpan.FromSeconds(_currentIntervalInSeconds), 
+        TimeSpan.FromSeconds(_currentIntervalInSeconds));
 
         Console.WriteLine($"Started sending requests every {_currentIntervalInSeconds} seconds.");
     }

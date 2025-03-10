@@ -35,19 +35,16 @@ public class TimedTask
         {
             try
             {
-                await _task(); // Execute the provided asynchronous task
-                await Task.Delay(_interval, token); // Wait for the specified interval, respecting cancellation
+                await _task(); 
+                await Task.Delay(_interval, token); 
             }
             catch (OperationCanceledException)
             {
-                // Expected when cancellation is requested.  Do nothing, loop will exit.
             }
             catch (Exception ex)
             {
-                // Handle exceptions appropriately (e.g., logging) to prevent the timer from crashing.
                 Console.WriteLine($"Error in periodic task: {ex.Message}");
-                // Consider adding a delay here to avoid rapid-fire errors.
-                await Task.Delay(_interval, token); // Wait before the next attempt.
+                await Task.Delay(_interval, token); 
             }
         }
     }

@@ -27,7 +27,8 @@ string username = "monitor";
 int intervalInSeconds = 5; 
 
 var sshConnection = new SshConnection(agentIp, agentPort, username);
-sshConnection.Connect();
-sshConnection.StartSendingRequests(intervalInSeconds);
+await sshConnection.StartSendingRequests(intervalInSeconds);
 app.MapControllers();
 app.Run("http://localhost:9000");
+
+//Error processing item: 53300: sorry, too many clients already
