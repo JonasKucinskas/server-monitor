@@ -3,18 +3,30 @@
     <div class="row">
       <div class="col-12">
 
-        <card type="chart">
-          <card type="header">
-            <div class="col-sm-6">
-              <h2 class="card-title">{{ this.systemInfo.name }}</h2>
-            </div>
-          </card>
+        <card type="dashboard-header">
+          <div class="col-sm-6">
+            <h2 class="card-title">{{ this.systemInfo.name }}</h2>
+          </div>
 
-          <card type="body">
-            <div class="col-sm-6">
-              <h2 class="card-title">{{ $t("Body") }}</h2>
-            </div>
-          </card>
+          <div class="d-flex align-items-center ml-3">
+            <p class="mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+              {{ this.apiData[0]?.serverId }}
+            </p>
+            <p class="mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-arrow-up h-4 w-4"><path d="M13.228 21.925A10 10 0 1 1 21.994 12.338"></path><path d="M12 6v6l1.562.781"></path><path d="m14 18 4-4 4 4"></path><path d="M18 22v-8"></path></svg>              
+              {{ this.uptime }}
+            </p>
+            <p class="mr-3">
+              <svg viewBox="0 0 256 256" width="24" height="24" class="h-4 w-4"> <path fill="currentColor" d="M231 217a12 12 0 0 1-16-2c-2-1-35-44-35-127a52 52 0 1 0-104 0c0 83-33 126-35 127a12 12 0 0 1-18-14c0-1 29-39 29-113a76 76 0 1 1 152 0c0 74 29 112 29 113a12 12 0 0 1-2 16m-127-97a16 16 0 1 0-16-16 16 16 0 0 0 16 16m64-16a16 16 0 1 0-16 16 16 16 0 0 0 16-16m-73 51 28 12a12 12 0 0 0 10 0l28-12a12 12 0 0 0-10-22l-23 10-23-10a12 12 0 0 0-10 22m33 29a57 57 0 0 0-39 15 12 12 0 0 0 17 18 33 33 0 0 1 44 0 12 12 0 1 0 17-18 57 57 0 0 0-39-15"></path></svg>
+              {{ this.kernel }}
+            </p>
+            <p class="mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu h-4 w-4"><rect width="16" height="16" x="4" y="4" rx="2"></rect><rect width="6" height="6" x="9" y="9" rx="1"></rect><path d="M15 2v2"></path><path d="M15 20v2"></path><path d="M2 15h2"></path><path d="M2 9h2"></path><path d="M20 15h2"></path><path d="M20 9h2"></path><path d="M9 2v2"></path><path d="M9 20v2"></path></svg>              
+              {{ this.apiData[0]?.cpuName }}
+            </p>
+          </div>
+        
         </card>
       </div>
     </div>
@@ -245,6 +257,8 @@ export default {
     return {
       systemInfo: [],
       apiData: [], 
+      uptime: "",
+      kernel: "",
       cpuChart: {
         allData: [],
         activeIndex: 0,
@@ -774,6 +788,13 @@ export default {
     this.systemInfo = await apiService.getSystem(this.$route.params.systemName);
     await this.$store.dispatch('fetchSystemDetails', this.systemInfo);
 
+
+    const uptimeResult = await apiService.execCommand("uptime -p", this.systemInfo);
+    this.uptime = uptimeResult.output.replace("up ", '');
+    const kernelResult = await apiService.execCommand("uname -r", this.systemInfo);
+    this.kernel = kernelResult.output;
+
+    //  const kernel = apiService.execCommand("uname -r", this.systemInfo);
     //fetch metrics objects
     try {
       this.apiData = await apiService.getMetrics(this.systemInfo.name);

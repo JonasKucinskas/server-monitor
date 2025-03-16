@@ -1,7 +1,7 @@
 <template>
   <div class="row">
     <div class="col-md-12">
-      <card type="tasks">
+      <card type="services">
         <template slot="header">
           
           <base-dropdown
@@ -56,6 +56,7 @@ export default {
   methods: {
     async loadData() {
       try {
+        console.log(this.currentSystem);
         const response = await apiService.execCommand('systemd-cgtop', this.currentSystem); 
         this.tableData = this.formatData(response.output);
       } catch (error) {
