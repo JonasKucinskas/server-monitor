@@ -47,6 +47,7 @@ export default {
   components: {
     BaseTable
   },
+  
   methods: {
     goToDashboard(system) {
       this.$router.push({ name: 'dashboard', params: { systemName: system.name } });

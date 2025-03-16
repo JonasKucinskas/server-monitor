@@ -56,6 +56,48 @@ public class Database
         return systems;
     }
 
+    public async Task<SystemData> FetchSystemByName(string systemName)
+    {
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+
+        string serverMetricsQuery = @"
+            SELECT * FROM servers WHERE system_name = @systemName;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("systemName", systemName);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        var systemData = new SystemData();
+
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                systemData.id = reader.GetInt32(reader.GetOrdinal("server_id"));
+                systemData.ip = reader.GetString(reader.GetOrdinal("server_ip"));
+                systemData.port = reader.GetInt32(reader.GetOrdinal("server_port"));
+                systemData.name = reader.GetString(reader.GetOrdinal("system_name"));
+                systemData.ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id"));
+                systemData.creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        return systemData;
+    }
+
     public async Task<List<ServerMetrics>> FetchServerMetrics(string systemName, DateTime startTime, DateTime endTime)
     {
         if (conn.State != System.Data.ConnectionState.Open)

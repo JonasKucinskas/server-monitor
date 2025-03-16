@@ -11,7 +11,7 @@ public class SystemsController : ControllerBase
         _dbService = dbService;
     }
 
-    [HttpGet]
+    [HttpGet("all")]
     public async Task<ActionResult<List<SystemData>>> GetAllSystems([FromQuery] int userId)
     {
         try
@@ -24,6 +24,26 @@ public class SystemsController : ControllerBase
                 return NotFound("No systems found.");
             }
             return Ok(systems);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpGet("byname")]
+    public async Task<ActionResult<SystemData>> GetSystemByName([FromQuery] string name)
+    {
+        try
+        {
+            var system = await _dbService.FetchSystemByName(name);
+
+            var json = System.Text.Json.JsonSerializer.Serialize(system);
+            if (system == null)
+            {
+                return NotFound("No systems found.");
+            }
+            return Ok(system);
         }
         catch (Exception ex)
         {

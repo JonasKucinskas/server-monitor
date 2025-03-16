@@ -6,7 +6,7 @@
         <card type="chart">
           <card type="header">
             <div class="col-sm-6">
-              <h2 class="card-title">{{ systemName }}</h2>
+              <h2 class="card-title">{{ this.systemInfo.name }}</h2>
             </div>
           </card>
 
@@ -234,6 +234,7 @@ import BarChart from "@/components/Charts/BarChart";
 import * as chartConfigs from "@/components/Charts/config";
 import config from "@/config";
 import apiService from "@/services/api";
+import { mapState, mapActions } from 'vuex';
 
 export default {
   components: {
@@ -242,7 +243,7 @@ export default {
   },
   data() {
     return {
-      systemName: "",
+      systemInfo: [],
       apiData: [], 
       cpuChart: {
         allData: [],
@@ -383,7 +384,7 @@ export default {
     networkChartExtraCategories()
     {
       return this.$t("dashboard.networkChartExtraCategories");
-    }
+    },
   },
   methods: {
     initCpuChart(index) {
@@ -766,21 +767,16 @@ export default {
       
       this.swapChart.chartData = chartData;
     },
-    async execCommand(command) {
-      try {
-        await apiService.execCommand(command);
-        console.log('Function executed successfully!');
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    },
+    ...mapActions(['fetchSystemDetails']),
   },
   async mounted() {
+    
+    this.systemInfo = await apiService.getSystem(this.$route.params.systemName);
+    await this.$store.dispatch('fetchSystemDetails', this.systemInfo);
 
-    this.systemName = this.$route.params.systemName;
     //fetch metrics objects
     try {
-      this.apiData = await apiService.getMetrics(this.systemName);
+      this.apiData = await apiService.getMetrics(this.systemInfo.name);
     } catch (error) {
       console.error("API Error:", error);
     } 

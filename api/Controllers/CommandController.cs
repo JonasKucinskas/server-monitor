@@ -9,20 +9,20 @@ public class CommandController : ControllerBase
     }
 
     [HttpPost("execute")]
-    public IActionResult ExecuteFunction([FromBody] CommandRequest request)
+    public IActionResult ExecuteFunction([FromQuery] string Command, [FromBody] SystemData systemInfo)
     {
-        if (string.IsNullOrEmpty(request?.Command))
+        if (string.IsNullOrEmpty(Command))
         {
             return BadRequest(new { message = "Command string is required" });
         }
 
-        string cmdOutput = MultiSshConnection.Instance.RunCmd("localhost", 12345, request.Command);
-        Console.WriteLine($"Function executed with command: {request.Command}");
+        if (systemInfo == null || string.IsNullOrEmpty(systemInfo.ip))
+        {
+            return BadRequest(new { message = "System information is required" });
+        }
+
+        string cmdOutput = MultiSshConnection.Instance.RunCmd(systemInfo.ip, systemInfo.port, Command);
+        Console.WriteLine($"Function executed with command: {Command}");
         return Ok(new { output = cmdOutput });
     }
-}
-
-public class CommandRequest
-{
-    public string Command { get; set; }
 }

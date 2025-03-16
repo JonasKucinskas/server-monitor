@@ -3,32 +3,32 @@
     <side-bar>
       <template slot="links">
         <sidebar-link
-          to="/dashboard"
+          :to="`/systems/${this.$route.params.systemName}/dashboard`"
           :name="$t('sidebar.dashboard')"
           icon="tim-icons icon-chart-pie-36"
         />
         <sidebar-link
-          to="/services"
+          :to="`/systems/${this.$route.params.systemName}/services`"
           :name="$t('sidebar.services')"
           icon="tim-icons icon-puzzle-10"
         />
         <sidebar-link
-          to="/icons"
+          :to="`/systems/${this.$route.params.systemName}/icons`"
           :name="$t('sidebar.icons')"
           icon="tim-icons icon-atom"
         />
         <sidebar-link
-          to="/notifications"
+          :to="`/systems/${this.$route.params.systemName}/notifications`"
           :name="$t('sidebar.notifications')"
           icon="tim-icons icon-bell-55"
         />
         <sidebar-link
-          to="/profile"
+          :to="`/systems/${this.$route.params.systemName}/profile`"
           :name="$t('sidebar.userProfile')"
           icon="tim-icons icon-single-02"
         />
         <sidebar-link
-          to="/typography"
+          :to="`/systems/${this.$route.params.systemName}/typography`"
           :name="$t('sidebar.typography')"
           icon="tim-icons icon-align-center"
         />
@@ -49,6 +49,7 @@ import TopNavbar from "./TopNavbar.vue";
 import ContentFooter from "./ContentFooter.vue";
 import DashboardContent from "./Content.vue";
 import MobileMenu from "./MobileMenu";
+
 export default {
   components: {
     TopNavbar,

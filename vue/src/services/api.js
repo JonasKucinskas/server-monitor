@@ -18,19 +18,40 @@ export default {
       throw error; 
     });
   },
-  execCommand(command) {
-    return apiClient.post('/command/execute', { command })
-      .then(response => {
-        return response.data; 
-      })
-      .catch(error => {
+  execCommand(command, system) {
+    const cleanSystem = {
+        id: system.id,
+        ip: system.ip,
+        port: system.port,
+        name: system.name,
+        ownerId: system.ownerId, 
+        creationDate: system.creationDate
+    };
+    
+    return apiClient.post(`/command/execute?Command=${encodeURIComponent(command)}`, cleanSystem)
+    .then(response => {
+        return response.data;
+    })
+    .catch(error => {
         console.error("Error executing command:", error);
-        throw error; 
-      });
+        throw error;
+    });
   },
   getSystems(userId) {
-    return apiClient.get("/systems", {
+    return apiClient.get("/systems/all", {
       params: { userId } 
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getSystem(name) {
+    return apiClient.get("/systems/byname", {
+      params: { name } 
     })
     .then(response => {
       return response.data; 

@@ -44,6 +44,7 @@ import { BaseTable } from "@/components";
 import apiService from "@/services/api"; 
 
 export default {
+  currentSystem: null,
   components: {
     BaseTable,
   },
@@ -55,7 +56,7 @@ export default {
   methods: {
     async loadData() {
       try {
-        const response = await apiService.execCommand('systemd-cgtop'); 
+        const response = await apiService.execCommand('systemd-cgtop', this.currentSystem); 
         this.tableData = this.formatData(response.output);
       } catch (error) {
         console.error("API Error:", error);
@@ -82,6 +83,7 @@ export default {
     },
   },
   mounted() {
+    this.currentSystem = this.$store.getters.currentSystem;
     this.loadData();
   },
 };
