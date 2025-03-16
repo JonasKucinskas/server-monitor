@@ -1,23 +1,102 @@
+using System.Data;
 using System.Data.Common;
 using Npgsql;
 public class Database
 {
-    private readonly string connectionString;
     private readonly NpgsqlConnection conn;
     public Database(string connectionString)
     {
-        this.connectionString = connectionString;
         this.conn = new NpgsqlConnection(connectionString);
     }
 
-    public async Task<List<ServerMetrics>> FetchServerMetrics(string serverId, DateTime startTime, DateTime endTime)
+    public async Task<List<SystemData>> FetchAllSystems(int userId)
     {
         if (conn.State != System.Data.ConnectionState.Open)
         {
             await conn.OpenAsync();
         }
 
+        var systems = new List<SystemData>();
+
+        string serverMetricsQuery = @"
+            SELECT * FROM servers WHERE owner_user_id = @userId;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("userId", userId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var systemData = new SystemData
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("server_id")),
+                    ip = reader.GetString(reader.GetOrdinal("server_ip")),
+                    port = reader.GetInt32(reader.GetOrdinal("server_port")),
+                    name = reader.GetString(reader.GetOrdinal("system_name")),
+                    ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id")),
+                    creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed")),
+                };
+
+                systems.Add(systemData);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        return systems;
+    }
+
+    public async Task<List<ServerMetrics>> FetchServerMetrics(string systemName, DateTime startTime, DateTime endTime)
+    {
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+
+    //retarded
+
         var serverMetricsList = new List<ServerMetrics>();
+        string serverIp = "";
+
+        string getIpQuery = @"
+            SELECT server_ip FROM servers WHERE system_name = @systemName;
+        ";
+        await using var cmd = new NpgsqlCommand(getIpQuery, conn);
+        cmd.Parameters.AddWithValue("systemName", systemName);
+
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                serverIp = reader.GetString(reader.GetOrdinal("server_ip"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server ip: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        if (serverIp == "")
+        {
+            Console.WriteLine("faiuled to get serveriip");
+            return serverMetricsList;
+        }
 
         string serverMetricsQuery = @"
             SELECT time, server_id, cpu_name, cpu_freq, battery_name, battery_capacity, battery_status,
@@ -29,18 +108,17 @@ public class Database
             ORDER BY time;
         ";
 
-        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
-        cmd.Parameters.AddWithValue("serverId", serverId);
-        cmd.Parameters.AddWithValue("startTime", startTime);
-        cmd.Parameters.AddWithValue("endTime", endTime);
+        await using var cmd2 = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd2.Parameters.AddWithValue("serverId", serverIp);
+        cmd2.Parameters.AddWithValue("startTime", startTime);
+        cmd2.Parameters.AddWithValue("endTime", endTime);
 
-        await using var reader = await cmd.ExecuteReaderAsync();
+        await using var reader2 = await cmd2.ExecuteReaderAsync();
 
         try
         {
-            while (await reader.ReadAsync())
+            while (await reader2.ReadAsync())
             {
-                // Create a new ServerMetrics object for each row in the result
                 var serverMetrics = new ServerMetrics
                 {
                     Time = reader.GetDateTime(reader.GetOrdinal("time")),
@@ -64,7 +142,6 @@ public class Database
                     RamSwapUsed = reader.GetInt64(reader.GetOrdinal("ram_swap_used"))
                 };
 
-                // Add the current object to the list
                 serverMetricsList.Add(serverMetrics);
             }
         }
@@ -74,29 +151,28 @@ public class Database
         }
         finally
         {
-            await reader.CloseAsync();
+            await reader2.CloseAsync();
         }
 
-        // Fetch additional metrics (sensor, cpu core, disk partitions, network, etc.)
         foreach (var serverMetrics in serverMetricsList)
         {
-            var sensorList = await FetchSensorDataAsync(serverId, serverMetrics.Time);
+            var sensorList = await FetchSensorDataAsync(serverIp, serverMetrics.Time);
             serverMetrics.SensorList = sensorList;
 
-            var cpuCoresList = await FetchCpuCoreDataAsync(serverId, serverMetrics.Time);
+            var cpuCoresList = await FetchCpuCoreDataAsync(serverIp, serverMetrics.Time);
             serverMetrics.CpuCores = cpuCoresList;
 
-            var diskPartitionsList = await FetchDiskPartitionDataAsync(serverId, serverMetrics.Time);
+            var diskPartitionsList = await FetchDiskPartitionDataAsync(serverIp, serverMetrics.Time);
             serverMetrics.DiskPartitions = diskPartitionsList;
 
-            var networkMetricsList = await FetchNetworkMetricsAsync(serverId, serverMetrics.Time);
+            var networkMetricsList = await FetchNetworkMetricsAsync(serverIp, serverMetrics.Time);
             serverMetrics.NetworkMetrics = networkMetricsList;
         }
 
         return serverMetricsList;
     }
 
-    private async Task<List<Sensor>> FetchSensorDataAsync(string serverId, DateTime time)
+    private async Task<List<Sensor>> FetchSensorDataAsync(string serverIp, DateTime time)
     {
         var sensorList = new List<Sensor>();
 
@@ -107,7 +183,7 @@ public class Database
         ";
 
         await using var sensorCmd = new NpgsqlCommand(sensorQuery, conn);
-        sensorCmd.Parameters.AddWithValue("serverId", serverId);
+        sensorCmd.Parameters.AddWithValue("serverId", serverIp);
         sensorCmd.Parameters.AddWithValue("time", time);
 
         await using (var sensorReader = await sensorCmd.ExecuteReaderAsync())
@@ -135,7 +211,7 @@ public class Database
         return sensorList;
     }
 
-    private async Task<List<CoreMetrics>> FetchCpuCoreDataAsync(string serverId, DateTime time)
+    private async Task<List<CoreMetrics>> FetchCpuCoreDataAsync(string serverIp, DateTime time)
     {
         var cpuCoresList = new List<CoreMetrics>();
 
@@ -146,7 +222,7 @@ public class Database
         ";
 
         await using var cpuCoresCmd = new NpgsqlCommand(cpuCoresQuery, conn);
-        cpuCoresCmd.Parameters.AddWithValue("serverId", serverId);
+        cpuCoresCmd.Parameters.AddWithValue("serverId", serverIp);
         cpuCoresCmd.Parameters.AddWithValue("time", time);
 
         await using (var cpuCoresReader = await cpuCoresCmd.ExecuteReaderAsync())
@@ -182,7 +258,7 @@ public class Database
         return cpuCoresList;
     }
 
-    private async Task<List<DiskPartition>> FetchDiskPartitionDataAsync(string serverId, DateTime time)
+    private async Task<List<DiskPartition>> FetchDiskPartitionDataAsync(string serverIp, DateTime time)
     {
         var diskPartitionsList = new List<DiskPartition>();
 
@@ -193,7 +269,7 @@ public class Database
         ";
 
         await using var diskPartitionsCmd = new NpgsqlCommand(diskPartitionsQuery, conn);
-        diskPartitionsCmd.Parameters.AddWithValue("serverId", serverId);
+        diskPartitionsCmd.Parameters.AddWithValue("serverId", serverIp);
         diskPartitionsCmd.Parameters.AddWithValue("time", time);
 
         await using (var diskPartitionsReader = await diskPartitionsCmd.ExecuteReaderAsync())
@@ -224,7 +300,7 @@ public class Database
         return diskPartitionsList;
     }
 
-    private async Task<List<NetworkMetric>> FetchNetworkMetricsAsync(string serverId, DateTime time)
+    private async Task<List<NetworkMetric>> FetchNetworkMetricsAsync(string serverIp, DateTime time)
     {
         var networkMetricsList = new List<NetworkMetric>();
 
@@ -236,7 +312,7 @@ public class Database
         ";
 
         await using var networkMetricsCmd = new NpgsqlCommand(networkMetricsQuery, conn);
-        networkMetricsCmd.Parameters.AddWithValue("serverId", serverId);
+        networkMetricsCmd.Parameters.AddWithValue("serverId", serverIp);
         networkMetricsCmd.Parameters.AddWithValue("time", time);
 
         await using (var networkMetricsReader = await networkMetricsCmd.ExecuteReaderAsync())
@@ -293,7 +369,7 @@ public class Database
             await conn.OpenAsync();
         }
         await ConvertToDataBaseObjects(metrics).InsertToDatabase(conn);
-        await conn.CloseAsync();//this is reyatded
+        await conn.CloseAsync();//this is reyatded, but oky for now
     }
 
     private static ServerMetrics ConvertToDataBaseObjects(DataPackage data)

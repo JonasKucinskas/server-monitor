@@ -12,16 +12,17 @@ public class MetricsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<NetworkMetric>>> GetMetrics()
+    public async Task<ActionResult<List<NetworkMetric>>> GetMetrics([FromQuery] string systemName)
     {
         try
         {
             DateTime now = DateTime.Now;
-            DateTime dayago = now.AddHours(-24);
+            DateTime dayago = now.AddMinutes(-1);
 
-            var metrics = await _dbService.FetchServerMetrics("localhost", dayago, now);
+            var metrics = await _dbService.FetchServerMetrics(systemName, dayago, now);
+
             var json = System.Text.Json.JsonSerializer.Serialize(metrics);
-            if (metrics == null || !metrics.Any())
+            if (metrics == null || metrics.Count == 0)
             {
                 return NotFound("No metrics found.");
             }

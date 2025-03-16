@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Security;
 using System.Text.RegularExpressions;
@@ -102,6 +103,11 @@ public class SshConnection
         
         //e.Agreed = true;  // func(e.ShellType, e.CommandText, e.AttachedUserAuthArgs);
 
+        //if (!e.Agreed)
+        //    return;
+
+        Console.WriteLine("Command received: " + e.CommandText);
+
         if (e.CommandText == "echo 'dataRequest'")
         {
             List<DataPackage> samples = Sampler.Instance.GetSamples();        
@@ -143,55 +149,41 @@ public class SshConnection
             Sampler.Instance.ClearSamples();
             Console.WriteLine("Samples Cleared");
         }
-
-        /*
-        if (!e.Agreed)
-            return;
-
-        if (e.ShellType == "shell")
+        else
         {
-            // requirements: Windows 10 RedStone 5, 1809
-            // also, you can call powershell.exe
-            var terminal = new Terminal("cmd.exe", windowWidth, windowHeight);
+            //exec command 
 
-            e.Channel.DataReceived += (ss, ee) => terminal.OnInput(ee);
-            e.Channel.CloseReceived += (ss, ee) => terminal.OnClose();
-            terminal.DataReceived += (ss, ee) => e.Channel.SendData(ee);
-            terminal.CloseReceived += (ss, ee) => e.Channel.SendClose(ee);
-
-            terminal.Run();
-        }
-        else if (e.ShellType == "exec")
-        {
-            var parser = new Regex(@"(?<cmd>git-receive-pack|git-upload-pack|git-upload-archive) \'/?(?<proj>.+)\.git\'");
-            var match = parser.Match(e.CommandText);
-            var command = match.Groups["cmd"].Value;
-            var project = match.Groups["proj"].Value;
-
-            var git = new GitService(command, project);
-
-            e.Channel.DataReceived += (ss, ee) => git.OnData(ee);
-            e.Channel.CloseReceived += (ss, ee) => git.OnClose();
-            git.DataReceived += (ss, ee) => e.Channel.SendData(ee);
-            git.CloseReceived += (ss, ee) => e.Channel.SendClose(ee);
-
-            git.Start();
-        }
-        else if (e.ShellType == "subsystem")
-        {
-            if (e.CommandText == "sftp")
+            string[] commandParts = e.CommandText.Split(' ');
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                var sftp = new SftpService(OperatingSystem.IsWindows() ? @"C:\" : @"/");
-                e.Channel.DataReceived += (ss, ee) => sftp.OnData(ee);
-                e.Channel.CloseReceived += (ss, ee) => sftp.OnClose();
-                sftp.DataReceived += (ss, ee) => e.Channel.SendData(ee);
+                FileName = commandParts[0],  //first item.
+                Arguments = string.Join(" ", commandParts.Skip(1)), //everything after first word.
+                RedirectStandardOutput = true, 
+                UseShellExecute = false, 
+                CreateNoWindow = true
+            };
+
+            try
+            {
+                Process process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+
+                process.WaitForExit();
+                    
+                Console.WriteLine("Command output: " + output);
+                e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes(output));
+                e.Channel.SendClose();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now} failed to exec {e.CommandText} command");
+                Console.WriteLine(ex.Message);
+ 
+                e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes($"{DateTime.Now} failed to exec {e.CommandText} command."));
+                e.Channel.SendClose();
             }
         }
-        */
-    }
-    public class MyData
-    {
-        public string Name;
-        public int Value;
     }
 }

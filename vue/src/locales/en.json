@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "ramUsageHeader": "Memory Usage",
+    "ramUsageFooter": "Precise memory utilization",
+    "diskUsageHeader": "Disk Usage",
+    "diskUsageFooter": "Usage of root partition",
+    "networkUsageHeader": "Bandwidth",
+    "networkUsageFooter": "Network traffic of public interfaces",
+    "swapUsageHeader": "Swap Usage",
+    "swapUsageFooter": "Swap space used by the system",
+    "sensorUsageHeader": "Sensors",
+    "sensorUsageFooter": "Values of system sensors",
+    "cpuUsageHeader": "CPU Usage",
+    "cpuUsageFooter": "Average system-wide CPU utilization",
+    "cpuChartCategories": ["Overall Usage", "All Cores", "Frequency"],
+    "networkChartCategories": ["Overall Usage", "All Interfaces"],
+    "networkChartExtraCategories": ["Download", "Upload"],
+    "dropdown": {
+      "action": "Action",
+      "anotherAction": "Another Action",
+      "somethingElse": "Something else"
+    }
+  },
+  "services": {
+    "title": "Services"
+  },
+  "sidebar": {
+    "shortTitle": "CT",
+    "dashboard": "Dashboard",
+    "icons": "Icons",
+    "maps": "Maps",
+    "notifications": "Notifications",
+    "userProfile": "User Profile",
+    "services": "Services",
+    "typography": "Typography"
+  },
+  "systems": {
+    "header": "All Systems",
+    "footer": "Updated in real time. Click on a system to view information."
+  }
+}

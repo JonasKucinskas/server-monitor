@@ -8,7 +8,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers(); 
 
 var connectionString = builder.Configuration.GetConnectionString("TimescaleDb");
-// Register Database service with connection string
 builder.Services.AddScoped<Database>(provider => new Database(connectionString));
 
 var app = builder.Build(); 
@@ -20,15 +19,12 @@ if (!File.Exists("privateKey.pem") || !File.Exists("publicKey.pub"))
     KeyGen.GenerateKeyPair(); 
 }
 
-// Connect to SSH agent
 string agentIp = "localhost"; 
 int agentPort = 12345; 
 string username = "monitor"; 
 int intervalInSeconds = 5; 
 
-var sshConnection = new SshConnection(agentIp, agentPort, username);
-await sshConnection.StartSendingRequests(intervalInSeconds);
+await MultiSshConnection.Instance.StartSendingRequests(agentIp, agentPort, username, intervalInSeconds);
+
 app.MapControllers();
 app.Run("http://localhost:9000");
-
-//Error processing item: 53300: sorry, too many clients already

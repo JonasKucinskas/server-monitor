@@ -4,7 +4,20 @@
 ## Get latest from `dotnet new gitignore`
 
 .vscode/
-vue/
+vue/public
+vue/src/assets
+vue/src/components
+vue/src/directives
+vue/src/layout/starter
+vue/.babelrc
+vue/.editorconfig
+vue/.eslintrc
+vue/.npmrc
+vue/genezio.yaml
+vue/package-lock.json
+vue/package.json
+vue/vue.config.js
+
 vue/node_modules
 api/my_ssh_key
 api/my_ssh_key.pub
