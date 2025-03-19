@@ -1,14 +1,11 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col-12">
 
-        <card type="dashboard-header">
-          <div class="col-sm-6">
-            <h2 class="card-title">{{ this.systemInfo.name }}</h2>
-          </div>
-
-          <div class="d-flex align-items-center ml-3">
+    <card type="dashboard-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="col-10">
+          <h2 class="card-title">{{ this.systemInfo.name }}</h2>
+          <div class="d-flex align-items-center mt-2">
             <p class="mr-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
               {{ this.apiData[0]?.serverId }}
@@ -17,8 +14,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-arrow-up h-4 w-4"><path d="M13.228 21.925A10 10 0 1 1 21.994 12.338"></path><path d="M12 6v6l1.562.781"></path><path d="m14 18 4-4 4 4"></path><path d="M18 22v-8"></path></svg>              
               {{ this.uptime }}
             </p>
-            <p class="mr-3">
-              <svg viewBox="0 0 256 256" width="24" height="24" class="h-4 w-4"> <path fill="currentColor" d="M231 217a12 12 0 0 1-16-2c-2-1-35-44-35-127a52 52 0 1 0-104 0c0 83-33 126-35 127a12 12 0 0 1-18-14c0-1 29-39 29-113a76 76 0 1 1 152 0c0 74 29 112 29 113a12 12 0 0 1-2 16m-127-97a16 16 0 1 0-16-16 16 16 0 0 0 16 16m64-16a16 16 0 1 0-16 16 16 16 0 0 0 16-16m-73 51 28 12a12 12 0 0 0 10 0l28-12a12 12 0 0 0-10-22l-23 10-23-10a12 12 0 0 0-10 22m33 29a57 57 0 0 0-39 15 12 12 0 0 0 17 18 33 33 0 0 1 44 0 12 12 0 1 0 17-18 57 57 0 0 0-39-15"></path></svg>
+            <p class="mr-3"><svg viewBox="0 0 256 256" width="24" height="24" class="h-4 w-4"><path fill="currentColor" d="M231 217a12 12 0 0 1-16-2c-2-1-35-44-35-127a52 52 0 1 0-104 0c0 83-33 126-35 127a12 12 0 0 1-18-14c0-1 29-39 29-113a76 76 0 1 1 152 0c0 74 29 112 29 113a12 12 0 0 1-2 16m-127-97a16 16 0 1 0-16-16 16 16 0 0 0 16 16m64-16a16 16 0 1 0-16 16 16 16 0 0 0 16-16m-73 51 28 12a12 12 0 0 0 10 0l28-12a12 12 0 0 0-10-22l-23 10-23-10a12 12 0 0 0-10 22m33 29a57 57 0 0 0-39 15 12 12 0 0 0 17 18 33 33 0 0 1 44 0 12 12 0 1 0 17-18 57 57 0 0 0-39-15"></path></svg>
               {{ this.kernel }}
             </p>
             <p class="mr-3">
@@ -26,10 +22,61 @@
               {{ this.apiData[0]?.cpuName }}
             </p>
           </div>
-        
-        </card>
+        </div>
+
+        <div class="col-2 d-flex align-items-center justify-content-end">
+          <date-range-picker 
+            v-model="dateRange"
+            :single-date-picker="false"
+            :ranges="false"
+            :minDate="this.minDate" 
+            :maxDate="this.maxDate"
+            :showDropdowns="false"
+            :time-picker="false"
+            :auto-apply="true"
+            :opens="'left'"
+            :locale-data="localeData"
+            @update="updateRangeValues"
+          >
+            <template v-slot:input="picker">
+              {{ picker.startDate | date }} - {{ picker.endDate | date }}
+            </template>
+          </date-range-picker>
+        </div>
+
+        <!--
+        <div class="col-5 d-flex align-items-center justify-content-end">
+          <base-combo-box
+            title="Select an option"
+            :options="['Option 1', 'Option 2', 'Option 3']"
+            :titleClasses="'btn btn-primary'"
+            :menuClasses="'dropdown-menu'"
+            :selectedOption="selectedOption"
+            @select="handleComboBoxSelect"
+          >
+          <template v-slot:title="{ isOpen }">
+            <div class="icon-and-text">
+              <span class="text">{{ selectedOption || 'Select an option' }}</span>
+              <span class="icon">
+                <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up h-4 w-4">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                  <path d="M12 7v5l4 2"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down h-4 w-4">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                  <path d="M12 7v5l4 2"></path>
+                </svg>
+              </span>
+            </div>
+          </template>
+          </base-combo-box>
+        </div>
+        -->
       </div>
-    </div>
+    </card>
+
     
     <div class="row">
       <div class="col-12">
@@ -242,23 +289,42 @@
 </template>
 <script>
 import LineChart from "@/components/Charts/LineChart";
-import BarChart from "@/components/Charts/BarChart";
+import BaseComboBox from "@/components/BaseComboBox.vue";
+import BaseInput from "../components/Inputs/BaseInput.vue";
 import * as chartConfigs from "@/components/Charts/config";
 import config from "@/config";
 import apiService from "@/services/api";
 import { mapState, mapActions } from 'vuex';
+import DateRangePicker from 'vue2-daterange-picker'
+import 'vue2-daterange-picker/dist/vue2-daterange-picker.css'
+
 
 export default {
   components: {
     LineChart,
-    BarChart,
+    BaseComboBox,
+    BaseInput,
+    DateRangePicker
   },
   data() {
     return {
+      minDate: "",
+      maxDate: "",
+      dateRange: { //todo
+        startDate: '2025-03-18', 
+        endDate: '2025-03-19' 
+      },
+      localeData: {
+        format: 'YYYY-MM-DD',
+        separator: ' to ',
+        applyLabel: 'Apply',
+        cancelLabel: 'Cancel',
+      },
       systemInfo: [],
       apiData: [], 
       uptime: "",
       kernel: "",
+      selectedOption: null,
       cpuChart: {
         allData: [],
         activeIndex: 0,
@@ -401,6 +467,24 @@ export default {
     },
   },
   methods: {
+    async updateRangeValues(newRange)
+    {
+      console.log('Updated date range:', newRange);
+      try {
+        this.apiData = await apiService.getMetrics(this.systemInfo.name, newRange);
+        this.initCpuChart(0);
+        this.initSensorChart();
+        this.initRamChart();
+        this.initNetworkChart(0);
+        this.initDiskChart();
+        this.initSwapChart();
+      } catch (error) {
+        console.error("API Error:", error);
+      } 
+    },
+    handleComboBoxSelect(option) {
+      this.selectedOption = option; 
+    },
     initCpuChart(index) {
       let chartData = {
         datasets: [],
@@ -430,7 +514,7 @@ export default {
         pointHoverRadius: 4,
         pointHoverBorderWidth: 15,
         pointRadius: 4,
-        label: coreIndex === 0 ? `Core ${coreIndex}` : `Core ${coreIndex - 1}`, 
+        label: index === 0 ? `CPU` : `Core ${coreIndex + 1}`, 
         data: this.apiData.map(metrics => {return parseFloat(metrics.cpuCores[coreIndex].total.toFixed(2))})
       });
 
@@ -787,7 +871,13 @@ export default {
     
     this.systemInfo = await apiService.getSystem(this.$route.params.systemName);
     await this.$store.dispatch('fetchSystemDetails', this.systemInfo);
+    //console.log(this.systemInfo.creationDate);
 
+    const date = new Date(this.systemInfo.creationDate);
+    this.minDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
+
+    const today = new Date();
+    this.maxDate = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
 
     const uptimeResult = await apiService.execCommand("uptime -p", this.systemInfo);
     this.uptime = uptimeResult.output.replace("up ", '');
@@ -797,13 +887,13 @@ export default {
     //  const kernel = apiService.execCommand("uname -r", this.systemInfo);
     //fetch metrics objects
     try {
-      this.apiData = await apiService.getMetrics(this.systemInfo.name);
+      this.apiData = await apiService.getMetrics(this.systemInfo.name, null);
     } catch (error) {
       console.error("API Error:", error);
     } 
 
     this.i18n = this.$i18n;
-    
+
     this.initCpuChart(0);
     this.initSensorChart();
     this.initRamChart();
@@ -813,8 +903,4 @@ export default {
   },
 };
 </script>
-<style>
-.card-title {
-  text-align: left;
-}
-</style>
+<style></style>

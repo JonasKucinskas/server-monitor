@@ -12,14 +12,20 @@ public class MetricsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<NetworkMetric>>> GetMetrics([FromQuery] string systemName)
+    public async Task<ActionResult<List<NetworkMetric>>> GetMetrics([FromQuery] string systemName, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         try
         {
             DateTime now = DateTime.Now;
-            DateTime dayago = now.AddMinutes(-1);
+            DateTime dayago = now.AddMinutes(-11);
 
-            var metrics = await _dbService.FetchServerMetrics(systemName, dayago, now);
+            DateTime actualStartDate = startDate ?? dayago;
+            DateTime actualEndDate = endDate ?? now;
+
+            Console.WriteLine(actualStartDate);
+            Console.WriteLine(actualEndDate);
+
+            var metrics = await _dbService.FetchServerMetrics(systemName, actualStartDate, actualEndDate);
 
             var json = System.Text.Json.JsonSerializer.Serialize(metrics);
             if (metrics == null || metrics.Count == 0)

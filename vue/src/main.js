@@ -19,3 +19,8 @@ new Vue({
   i18n,
   render: (h) => h(App),
 }).$mount("#app");
+
+Vue.filter('date', function(value) {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-GB');  // Adjust the format as needed
+});

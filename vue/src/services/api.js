@@ -6,9 +6,23 @@ const apiClient = axios.create({
 });
 
 export default {
-  getMetrics(systemName) {
+  getMetrics(systemName, dateRange) {
+
+    let startDate = null;
+    let endDate = null;
+
+    if (dateRange)
+    {
+      startDate = new Date(dateRange.startDate).toISOString();
+      endDate = new Date(dateRange.endDate).toISOString();
+    }
+    
     return apiClient.get("/metrics", {
-      params: { systemName } 
+      params: { 
+        systemName,
+        startDate: startDate ? startDate : null, 
+        endDate: endDate ? endDate : null 
+      }
     })
     .then(response => {
       return response.data; 

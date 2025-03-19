@@ -22,7 +22,7 @@ if (!File.Exists("privateKey.pem") || !File.Exists("publicKey.pub"))
 string agentIp = "localhost"; 
 int agentPort = 12345; 
 string username = "monitor"; 
-int intervalInSeconds = 5; 
+int intervalInSeconds = 60; 
 
 await MultiSshConnection.Instance.StartSendingRequests(agentIp, agentPort, username, intervalInSeconds);
 

@@ -121,7 +121,7 @@ public sealed class MultiSshConnection
             RequestData(agentIpAddress, agentPort, username);
         },
         null,
-        TimeSpan.FromSeconds(intervalInSeconds),
+        TimeSpan.Zero,
         TimeSpan.FromSeconds(intervalInSeconds));
 
         _timers.AddOrUpdate(serverKey, timer, (key, oldValue) => timer);
