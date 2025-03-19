@@ -108,7 +108,14 @@ public class SshConnection
 
         Console.WriteLine("Command received: " + e.CommandText);
 
-        if (e.CommandText == "echo 'dataRequest'")
+        
+        if (e.CommandText == "ping")
+        {
+            e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes("ping"));
+            e.Channel.SendClose();
+            return;
+        }
+        else if (e.CommandText == "echo 'dataRequest'")
         {
             List<DataPackage> samples = Sampler.Instance.GetSamples();        
 

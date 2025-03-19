@@ -61,6 +61,10 @@ public sealed class MultiSshConnection
             {
                 using (SshCommand cmd = sshClient.RunCommand(command))
                 {
+                    if (cmd.Result == "ping")
+                    {
+                        return null;
+                    }
                     return cmd.Result;
                 }
             }
@@ -126,7 +130,26 @@ public sealed class MultiSshConnection
 
         _timers.AddOrUpdate(serverKey, timer, (key, oldValue) => timer);
 
+        await MaintainConnection(agentIpAddress, agentPort);
+
         Console.WriteLine($"Started sending requests to {agentIpAddress}:{agentPort}:{username} every {intervalInSeconds} seconds.");
+    }
+
+    async Task MaintainConnection(string agentIpAddress, int agentPort)
+    {
+        string serverKey = $"{agentIpAddress}:{agentPort}:monitor";
+
+        var keepAliveTimer = new Timer(async _ =>
+        {
+            RunCmd(agentIpAddress, agentPort, "ping");
+        },
+        null,
+        TimeSpan.FromSeconds(20),//connection timeouts after 30s, so gotta send empty commands
+        TimeSpan.FromSeconds(20));
+
+        _timers.AddOrUpdate($"{serverKey}-keepalive", keepAliveTimer, (key, oldValue) => keepAliveTimer);
+
+        Console.WriteLine($"{DateTime.Now} Sent a ping to server.");
     }
 
     public void ChangeInterval(string agentIpAddress, int agentPort, string username, int newIntervalInSeconds)
