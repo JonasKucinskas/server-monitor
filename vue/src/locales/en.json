@@ -32,10 +32,16 @@
     "notifications": "Notifications",
     "userProfile": "User Profile",
     "services": "Services",
+    "networkServices": "Network Services",
+    "uptimes": "Uptimes",
     "typography": "Typography"
   },
   "systems": {
     "header": "All Systems",
     "footer": "Updated in real time. Click on a system to view information."
+  },
+  "networkServices":{
+    "header": "Network Services",
+    "footer": "Monitor network services."
   }
 }

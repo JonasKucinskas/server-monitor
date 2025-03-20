@@ -6,6 +6,45 @@ const apiClient = axios.create({
 });
 
 export default {
+  getNetworkServicePings(serviceId, dateRange) {
+    let startDate = null;
+    let endDate = null;
+
+    if (dateRange)
+    {
+      startDate = new Date(dateRange.startDate).toISOString();
+      endDate = new Date(dateRange.endDate).toISOString();
+    }
+    
+    return apiClient.get("/networkServices/pings", {
+      params: { 
+        serviceId,
+        startDate: startDate ? startDate : null, 
+        endDate: endDate ? endDate : null 
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getNetworkServices(systemId){
+    return apiClient.get("/networkServices", {
+      params: { 
+        systemId
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   getMetrics(systemName, dateRange) {
 
     let startDate = null;

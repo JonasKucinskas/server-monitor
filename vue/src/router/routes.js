@@ -10,6 +10,7 @@ const Icons = () => import("@/pages/Icons.vue");
 const Typography = () => import("@/pages/Typography.vue");
 const Services = () => import("@/pages/Services.vue");
 const Systems = () => import("@/pages/Systems.vue");
+const NetworkServices = () => import("@/pages/NetworkServices.vue");
 
 const routes = [
   {
@@ -22,6 +23,7 @@ const routes = [
       { path: "icons", name: "icons", component: Icons },
       { path: "typography", name: "typography", component: Typography },
       { path: "services", name: "services", component: Services },
+      { path: "networkServices", name: "networkServices", component: NetworkServices },
       { path: "", redirect: "dashboard" }
     ],
   },

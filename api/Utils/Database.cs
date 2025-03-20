@@ -1,12 +1,113 @@
 using System.Data;
 using System.Data.Common;
 using Npgsql;
+
 public class Database
 {
     private readonly NpgsqlConnection conn;
     public Database(string connectionString)
     {
         this.conn = new NpgsqlConnection(connectionString);
+    }
+
+    public async Task<List<NetworkService>> FetchAllNetworkServices(string systemId)
+    {
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+
+        var services = new List<NetworkService>();
+
+        string serverMetricsQuery = @"
+            SELECT * FROM networkServices WHERE system_id = @systemId;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("systemId", systemId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var networkService = new NetworkService
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    systemId = reader.GetString(reader.GetOrdinal("system_id")),
+                    name = reader.GetString(reader.GetOrdinal("name")),
+                    ip = reader.GetString(reader.GetOrdinal("ip")),
+                    port = reader.GetInt32(reader.GetOrdinal("port")),
+                    interval = reader.GetInt32(reader.GetOrdinal("interval")),
+                    timeout = reader.GetInt32(reader.GetOrdinal("timeout")),
+                    expected_status = reader.GetInt32(reader.GetOrdinal("expected_status")),
+                    last_checked = reader.GetDateTime(reader.GetOrdinal("last_checked")),
+                };
+
+                services.Add(networkService);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error network services with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        return services;
+    }
+    
+    public async Task<List<PingData>> FetchNetworkServicePings(int serviceId, DateTime startTime, DateTime endTime)
+    {
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+
+        var pings = new List<PingData>();
+        
+        string serverMetricsQuery = @"
+            SELECT * FROM networkServicePings WHERE service_id = @serviceId AND timestamp BETWEEN @startTime AND @endTIme;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("serviceId", serviceId);
+        cmd.Parameters.AddWithValue("startTime", startTime);
+        cmd.Parameters.AddWithValue("endTIme", endTime);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var ping = new PingData
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")), 
+                    serviceId = reader.GetInt32(reader.GetOrdinal("service_id")), 
+                    isUp = reader.GetBoolean(reader.GetOrdinal("is_up")),  
+                    responseTime = reader.GetFloat(reader.GetOrdinal("response_time")), 
+                    errorMessage = reader.GetString(reader.GetOrdinal("error_message")), 
+                    timestamp = reader.GetDateTime(reader.GetOrdinal("timestamp")),  
+                };
+
+                pings.Add(ping);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching pings with details: {ex.Message}");
+        }
+        finally
+
+        {
+            await reader.CloseAsync();
+        }
+
+        return pings;
     }
 
     public async Task<List<SystemData>> FetchAllSystems(int userId)
@@ -105,7 +206,7 @@ public class Database
             await conn.OpenAsync();
         }
 
-    //retarded
+    //retarded x2
 
         var serverMetricsList = new List<ServerMetrics>();
         string serverIp = "";

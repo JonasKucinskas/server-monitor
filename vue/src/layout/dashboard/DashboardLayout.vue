@@ -13,6 +13,11 @@
           icon="tim-icons icon-puzzle-10"
         />
         <sidebar-link
+          :to="`/systems/${this.$route.params.systemName}/networkServices`"
+          :name="$t('sidebar.networkServices')"
+          icon="tim-icons icon-atom"
+        />
+        <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/icons`"
           :name="$t('sidebar.icons')"
           icon="tim-icons icon-atom"

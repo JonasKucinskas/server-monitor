@@ -588,6 +588,22 @@ export default {
         datasets: [
           {
             fill: true,
+            borderColor: colors[5],
+            borderWidth: 2,
+            borderDash: [],
+            borderDashOffset: 0.0,
+            pointBackgroundColor: colors[5],
+            pointBorderColor: "rgba(255,255,255,0)",
+            pointHoverBackgroundColor: colors[5],
+            pointBorderWidth: 20,
+            pointHoverRadius: 4,
+            pointHoverBorderWidth: 15,
+            pointRadius: 4,
+            label: "Upload",
+            data: this.apiData.map(metrics => metrics.networkMetrics.reduce((sum, nm) => sum + (nm.upload || 0), 0) / Math.pow(1024, 2))
+          },
+          {
+            fill: true,
             borderColor: config.colors.primary,
             borderWidth: 2,
             borderDash: [],
@@ -599,21 +615,7 @@ export default {
             pointHoverRadius: 4,
             pointHoverBorderWidth: 15,
             pointRadius: 4,
-            data: this.apiData.map(metrics => metrics.networkMetrics.reduce((sum, nm) => sum + (nm.upload || 0), 0) / Math.pow(1024, 2))
-          },
-          {
-            fill: true,
-            borderColor: config.colors.secondary,
-            borderWidth: 2,
-            borderDash: [],
-            borderDashOffset: 0.0,
-            pointBackgroundColor: config.colors.secondary,
-            pointBorderColor: "rgba(255,255,255,0)",
-            pointHoverBackgroundColor: config.colors.secondary,
-            pointBorderWidth: 20,
-            pointHoverRadius: 4,
-            pointHoverBorderWidth: 15,
-            pointRadius: 4,
+            label: "Download",
             data: this.apiData.map(metrics => metrics.networkMetrics.reduce((sum, nm) => sum + (nm.download || 0), 0) / Math.pow(1024, 2))
           }
         ],
