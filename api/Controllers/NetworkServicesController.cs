@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations; 
 
 [ApiController]
 [Route("api/networkServices")]
@@ -32,7 +33,7 @@ public class NetworkServicesController : ControllerBase
     }
 
     [HttpGet("pings")]
-    public async Task<ActionResult<List<NetworkMetric>>> GetPings([FromQuery] int serviceId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    public async Task<ActionResult<List<SystemData>>> GetPings([FromQuery, Required] int serviceId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         try
         {
@@ -48,10 +49,14 @@ public class NetworkServicesController : ControllerBase
             var pings = await _dbService.FetchNetworkServicePings(serviceId, actualStartDate, actualEndDate);
 
             var json = System.Text.Json.JsonSerializer.Serialize(pings);
+            
             if (pings == null || pings.Count == 0)
             {
                 return NotFound("No pings found.");
             }
+
+            
+
             return Ok(pings);
         }
         catch (Exception ex)

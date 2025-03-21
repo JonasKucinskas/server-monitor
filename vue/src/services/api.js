@@ -15,7 +15,6 @@ export default {
       startDate = new Date(dateRange.startDate).toISOString();
       endDate = new Date(dateRange.endDate).toISOString();
     }
-    
     return apiClient.get("/networkServices/pings", {
       params: { 
         serviceId,

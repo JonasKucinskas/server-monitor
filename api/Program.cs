@@ -1,3 +1,5 @@
+using System.Net.NetworkInformation;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
@@ -9,6 +11,7 @@ builder.Services.AddControllers();
 
 var connectionString = builder.Configuration.GetConnectionString("TimescaleDb");
 builder.Services.AddScoped<Database>(provider => new Database(connectionString));
+builder.Services.AddHostedService<PingerService>();
 
 var app = builder.Build(); 
 

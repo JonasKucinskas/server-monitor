@@ -515,6 +515,16 @@ public class Database
         await conn.CloseAsync();//this is reyatded, but oky for now
     }
 
+    public async Task InsertNetworkServicePing(PingData ping)
+    {
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+        await ping.InsertToDatabase(conn);
+        await conn.CloseAsync();//this is reyatded, but oky for now
+    }
+
     private static ServerMetrics ConvertToDataBaseObjects(DataPackage data)
     {
         ServerMetrics serverMetrics = new ServerMetrics()

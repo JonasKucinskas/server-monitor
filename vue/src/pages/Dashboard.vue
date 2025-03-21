@@ -826,6 +826,8 @@ export default {
         ],
       };
 
+      //this.ramChart.extraOptions.scales.yAxis.ticks.suggestedMax = this.apiData.metrics[0].ramMemAvailable;
+
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
         const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
@@ -872,7 +874,7 @@ export default {
   async mounted() {
     
     this.systemInfo = await apiService.getSystem(this.$route.params.systemName);
-    await this.$store.dispatch('fetchSystemDetails', this.systemInfo);
+    await this.$store.dispatch('fetchSystemDetails', this.systemInfo);//store sysdetails
     //console.log(this.systemInfo.creationDate);
 
     const date = new Date(this.systemInfo.creationDate);
