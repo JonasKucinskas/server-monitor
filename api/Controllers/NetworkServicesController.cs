@@ -38,7 +38,8 @@ public class NetworkServicesController : ControllerBase
         try
         {
             DateTime now = DateTime.Now;
-            DateTime dayago = now.AddDays(-11);
+            DateTime dayago = now.AddMinutes(-5);
+            dayago = dayago.AddHours(-2);
 
             DateTime actualStartDate = startDate ?? dayago;
             DateTime actualEndDate = endDate ?? now;

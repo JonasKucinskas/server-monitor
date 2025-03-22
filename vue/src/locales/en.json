@@ -42,6 +42,9 @@
   },
   "networkServices":{
     "header": "Network Services",
-    "footer": "Monitor network services."
+    "footer": "Monitor network services.",
+    "infoChartHeader": "Service Information",
+    "infoChartFooter": "Service Information",
+    "chartHeader": "Service Response Times"
   }
 }

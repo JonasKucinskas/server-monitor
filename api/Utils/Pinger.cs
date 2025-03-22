@@ -42,6 +42,8 @@ public static class Pinger
                 ping.errorMessage = $"Error: {ex.Message}";
             }
 
+
+
             await db.InsertNetworkServicePing(ping);
             await Task.Delay(target.interval * 1000);//wait for next ping
         }
