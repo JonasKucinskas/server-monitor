@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 public class PingerService : BackgroundService
 {
@@ -24,11 +25,15 @@ public class PingerService : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<Database>();
 
-            string agentIp = "localhost";
-            List<NetworkService> targets = await db.FetchAllNetworkServices(agentIp);
-            List<Task> tasks = targets.Select(target => Pinger.PingAsync(target, _httpClient, db)).ToList();
+            List<NetworkService> targets = await db.FetchAllNetworkServices(null);
+            Console.WriteLine(targets.Count);
+
+
+            List<Task> tasks = targets.Select(target => Pinger.PingOnceAsync(target, _httpClient, db, stoppingToken)).ToList();
 
             await Task.WhenAll(tasks);
+
+            await Task.Delay(1000);
         }
     }
 }

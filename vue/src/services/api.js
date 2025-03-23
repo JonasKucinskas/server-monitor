@@ -6,6 +6,32 @@ const apiClient = axios.create({
 });
 
 export default {
+
+  insertNetworkService(networkService, system_name)
+  {
+    const cleanService = {
+      id: 0,//ignored
+      systemId: system_name,
+      name: networkService.name,
+      ip: networkService.ip,
+      port: networkService.port,
+      interval: networkService.interval, 
+      timeout: networkService.timeout,
+      expected_status: networkService.expected_status,
+      last_checked: "2025-03-23T14:30:00+00:00"//ignored
+    }
+  
+    console.log(cleanService);
+
+    return apiClient.post(`/networkServices`, cleanService)
+    .then(response => {
+        return response.data;
+    })
+    .catch(error => {
+        console.error("Error executing command:", error);
+        throw error;
+    });
+  },
   getNetworkServicePings(serviceId, dateRange) {
     let startDate = null;
     let endDate = null;

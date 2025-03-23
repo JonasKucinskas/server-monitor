@@ -32,6 +32,25 @@ public class NetworkServicesController : ControllerBase
         }
     }
 
+    [HttpPost]
+    public async Task<ActionResult<SystemData>> AddService([FromBody] NetworkService newService)
+    {
+        try
+        {
+            if (newService == null)
+            {
+                return BadRequest("Service data is null.");
+            }
+
+            await _dbService.InsertNetworkService(newService);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
     [HttpGet("pings")]
     public async Task<ActionResult<List<SystemData>>> GetPings([FromQuery, Required] int serviceId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
@@ -50,14 +69,6 @@ public class NetworkServicesController : ControllerBase
             var pings = await _dbService.FetchNetworkServicePings(serviceId, actualStartDate, actualEndDate);
 
             var json = System.Text.Json.JsonSerializer.Serialize(pings);
-            
-            if (pings == null || pings.Count == 0)
-            {
-                return NotFound("No pings found.");
-            }
-
-            
-
             return Ok(pings);
         }
         catch (Exception ex)

@@ -1,30 +1,65 @@
 using System.Data;
 using System.Data.Common;
+using System.Reflection;
+using Microsoft.OpenApi.Models;
 using Npgsql;
 
 public class Database
 {
     private readonly NpgsqlConnection conn;
+    private readonly string connectionString;
     public Database(string connectionString)
     {
+        this.connectionString = connectionString;
         this.conn = new NpgsqlConnection(connectionString);
+    }
+
+    public async Task OpenConnAsync()
+    {
+        try
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public async Task CloseConnAsync()
+    {
+        if (conn.State == System.Data.ConnectionState.Open)
+        {
+            await conn.CloseAsync();
+        }
     }
 
     public async Task<List<NetworkService>> FetchAllNetworkServices(string systemId)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
+        await OpenConnAsync();
 
         var services = new List<NetworkService>();
 
-        string serverMetricsQuery = @"
-            SELECT * FROM networkServices WHERE system_id = @systemId;
-        ";
+        string networkServicesQuery;
 
-        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
-        cmd.Parameters.AddWithValue("systemId", systemId);
+        if (systemId == null)
+        {
+            networkServicesQuery = @"SELECT * FROM networkServices;";
+        }
+        else
+        {
+            networkServicesQuery = @"SELECT * FROM networkServices WHERE system_id = @systemId;";
+        }
+
+        await using var cmd = new NpgsqlCommand(networkServicesQuery, conn);
+
+        if (systemId != null)
+        {
+            cmd.Parameters.AddWithValue("systemId", systemId);
+        }
 
         await using var reader = await cmd.ExecuteReaderAsync();
         
@@ -55,6 +90,54 @@ public class Database
         finally
         {
             await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return services;
+    }
+
+    public async Task<List<NetworkService>> FetchNetworkServiceById(string systemId)
+    {
+        await OpenConnAsync();
+
+        var services = new List<NetworkService>();
+
+        string serverMetricsQuery = @"
+            SELECT * FROM networkServices WHERE system_id = @systemId;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("systemId", systemId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var networkService = new NetworkService
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    systemId = reader.GetString(reader.GetOrdinal("system_id")),
+                    name = reader.GetString(reader.GetOrdinal("name")),
+                    ip = reader.GetString(reader.GetOrdinal("ip")),
+                    port = reader.GetInt32(reader.GetOrdinal("port")),
+                    interval = reader.GetInt32(reader.GetOrdinal("interval")),
+                    timeout = reader.GetInt32(reader.GetOrdinal("timeout")),
+                    expected_status = reader.GetInt32(reader.GetOrdinal("expected_status")),
+                };
+
+                services.Add(networkService);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error network services with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
         }
 
         return services;
@@ -62,21 +145,17 @@ public class Database
     
     public async Task<List<PingData>> FetchNetworkServicePings(int serviceId, DateTime startTime, DateTime endTime)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
-
+        await OpenConnAsync();
         var pings = new List<PingData>();
         
-        string serverMetricsQuery = @"
-            SELECT * FROM networkServicePings WHERE service_id = @serviceId AND timestamp BETWEEN @startTime AND @endTIme;
+        string networkServicePingsQuery = @"
+            SELECT * FROM networkServicePings WHERE service_id = @serviceId AND timestamp BETWEEN @startTime AND @endTime;
         ";
 
-        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        await using var cmd = new NpgsqlCommand(networkServicePingsQuery, conn);
         cmd.Parameters.AddWithValue("serviceId", serviceId);
         cmd.Parameters.AddWithValue("startTime", startTime);
-        cmd.Parameters.AddWithValue("endTIme", endTime);
+        cmd.Parameters.AddWithValue("endTime", endTime);
 
         await using var reader = await cmd.ExecuteReaderAsync();
         
@@ -102,9 +181,9 @@ public class Database
             Console.WriteLine($"Error fetching pings with details: {ex.Message}");
         }
         finally
-
         {
             await reader.CloseAsync();
+            await CloseConnAsync();
         }
 
         return pings;
@@ -112,11 +191,7 @@ public class Database
 
     public async Task<List<SystemData>> FetchAllSystems(int userId)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
-
+        await OpenConnAsync();
         var systems = new List<SystemData>();
 
         string serverMetricsQuery = @"
@@ -152,6 +227,7 @@ public class Database
         finally
         {
             await reader.CloseAsync();
+            await CloseConnAsync();
         }
 
         return systems;
@@ -159,11 +235,7 @@ public class Database
 
     public async Task<SystemData> FetchSystemByName(string systemName)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
-
+        await OpenConnAsync();
         string serverMetricsQuery = @"
             SELECT * FROM servers WHERE system_name = @systemName;
         ";
@@ -194,6 +266,7 @@ public class Database
         finally
         {
             await reader.CloseAsync();
+            await CloseConnAsync();
         }
 
         return systemData;
@@ -201,12 +274,7 @@ public class Database
 
     public async Task<List<ServerMetrics>> FetchServerMetrics(string systemName, DateTime startTime, DateTime endTime)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
-
-    //retarded x2
+        await OpenConnAsync();
 
         var serverMetricsList = new List<ServerMetrics>();
         string serverIp = "";
@@ -264,25 +332,25 @@ public class Database
             {
                 var serverMetrics = new ServerMetrics
                 {
-                    Time = reader.GetDateTime(reader.GetOrdinal("time")),
-                    ServerId = reader.GetString(reader.GetOrdinal("server_id")),
-                    CpuName = reader.GetString(reader.GetOrdinal("cpu_name")),
-                    CpuFreq = reader.GetDouble(reader.GetOrdinal("cpu_freq")),
-                    BatteryName = reader.GetString(reader.GetOrdinal("battery_name")),
-                    BatteryCapacity = reader.GetInt32(reader.GetOrdinal("battery_capacity")),
-                    BatteryStatus = reader.GetString(reader.GetOrdinal("battery_status")),
-                    DiskTotalSpace = reader.GetInt64(reader.GetOrdinal("disk_total_space")),
-                    DiskUsedSpace = reader.GetInt64(reader.GetOrdinal("disk_used_space")),
-                    DiskFreeSpace = reader.GetInt64(reader.GetOrdinal("disk_free_space")),
-                    RamMemTotal = reader.GetInt64(reader.GetOrdinal("ram_mem_total")),
-                    RamMemFree = reader.GetInt64(reader.GetOrdinal("ram_mem_free")),
-                    RamMemUsed = reader.GetInt64(reader.GetOrdinal("ram_mem_used")),
-                    RamMemAvailable = reader.GetInt64(reader.GetOrdinal("ram_mem_available")),
-                    RamBuffers = reader.GetInt64(reader.GetOrdinal("ram_buffers")),
-                    RamCached = reader.GetInt64(reader.GetOrdinal("ram_cached")),
-                    RamSwapTotal = reader.GetInt64(reader.GetOrdinal("ram_swap_total")),
-                    RamSwapFree = reader.GetInt64(reader.GetOrdinal("ram_swap_free")),
-                    RamSwapUsed = reader.GetInt64(reader.GetOrdinal("ram_swap_used"))
+                    Time = reader2.GetDateTime(reader2.GetOrdinal("time")),
+                    ServerId = reader2.GetString(reader2.GetOrdinal("server_id")),
+                    CpuName = reader2.GetString(reader2.GetOrdinal("cpu_name")),
+                    CpuFreq = reader2.GetDouble(reader2.GetOrdinal("cpu_freq")),
+                    BatteryName = reader2.GetString(reader2.GetOrdinal("battery_name")),
+                    BatteryCapacity = reader2.GetInt32(reader2.GetOrdinal("battery_capacity")),
+                    BatteryStatus = reader2.GetString(reader2.GetOrdinal("battery_status")),
+                    DiskTotalSpace = reader2.GetInt64(reader2.GetOrdinal("disk_total_space")),
+                    DiskUsedSpace = reader2.GetInt64(reader2.GetOrdinal("disk_used_space")),
+                    DiskFreeSpace = reader2.GetInt64(reader2.GetOrdinal("disk_free_space")),
+                    RamMemTotal = reader2.GetInt64(reader2.GetOrdinal("ram_mem_total")),
+                    RamMemFree = reader2.GetInt64(reader2.GetOrdinal("ram_mem_free")),
+                    RamMemUsed = reader2.GetInt64(reader2.GetOrdinal("ram_mem_used")),
+                    RamMemAvailable = reader2.GetInt64(reader2.GetOrdinal("ram_mem_available")),
+                    RamBuffers = reader2.GetInt64(reader2.GetOrdinal("ram_buffers")),
+                    RamCached = reader2.GetInt64(reader2.GetOrdinal("ram_cached")),
+                    RamSwapTotal = reader2.GetInt64(reader2.GetOrdinal("ram_swap_total")),
+                    RamSwapFree = reader2.GetInt64(reader2.GetOrdinal("ram_swap_free")),
+                    RamSwapUsed = reader2.GetInt64(reader2.GetOrdinal("ram_swap_used"))
                 };
 
                 serverMetricsList.Add(serverMetrics);
@@ -295,6 +363,7 @@ public class Database
         finally
         {
             await reader2.CloseAsync();
+            await CloseConnAsync();
         }
 
         foreach (var serverMetrics in serverMetricsList)
@@ -317,6 +386,7 @@ public class Database
 
     private async Task<List<Sensor>> FetchSensorDataAsync(string serverIp, DateTime time)
     {
+        await OpenConnAsync();
         var sensorList = new List<Sensor>();
 
         var sensorQuery = @"
@@ -349,6 +419,7 @@ public class Database
             finally
             {
                 await sensorReader.CloseAsync();
+                await CloseConnAsync();
             }
         }
         return sensorList;
@@ -356,6 +427,7 @@ public class Database
 
     private async Task<List<CoreMetrics>> FetchCpuCoreDataAsync(string serverIp, DateTime time)
     {
+        await OpenConnAsync();
         var cpuCoresList = new List<CoreMetrics>();
 
         var cpuCoresQuery = @"
@@ -396,6 +468,7 @@ public class Database
             finally
             {
                 await cpuCoresReader.CloseAsync();
+                await CloseConnAsync();
             }
         }
         return cpuCoresList;
@@ -403,6 +476,7 @@ public class Database
 
     private async Task<List<DiskPartition>> FetchDiskPartitionDataAsync(string serverIp, DateTime time)
     {
+        await OpenConnAsync();
         var diskPartitionsList = new List<DiskPartition>();
 
         var diskPartitionsQuery = @"
@@ -438,6 +512,7 @@ public class Database
             finally
             {
                 await diskPartitionsReader.CloseAsync();
+                await CloseConnAsync();
             }
         }
         return diskPartitionsList;
@@ -445,6 +520,7 @@ public class Database
 
     private async Task<List<NetworkMetric>> FetchNetworkMetricsAsync(string serverIp, DateTime time)
     {
+        await OpenConnAsync();
         var networkMetricsList = new List<NetworkMetric>();
 
         var networkMetricsQuery = @"
@@ -500,6 +576,7 @@ public class Database
             finally
             {
                 await networkMetricsReader.CloseAsync();
+                await CloseConnAsync();
             }
         }
         return networkMetricsList;
@@ -507,22 +584,27 @@ public class Database
 
     public async Task InsertServerMetricsAsync(DataPackage metrics)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
-        {
-            await conn.OpenAsync();
-        }
+        await OpenConnAsync();
         await ConvertToDataBaseObjects(metrics).InsertToDatabase(conn);
-        await conn.CloseAsync();//this is reyatded, but oky for now
+        await CloseConnAsync();
+    }
+
+    public async Task InsertNetworkService(NetworkService service)
+    {
+        await OpenConnAsync();
+        await service.InsertToDatabase(conn);
+        await CloseConnAsync();
     }
 
     public async Task InsertNetworkServicePing(PingData ping)
     {
-        if (conn.State != System.Data.ConnectionState.Open)
+        using (var conn2 = new NpgsqlConnection(connectionString)) 
         {
-            await conn.OpenAsync();
+
+            await conn2.OpenAsync();
+            await ping.InsertToDatabase(conn2);
+            await conn2.CloseAsync();
         }
-        await ping.InsertToDatabase(conn);
-        await conn.CloseAsync();//this is reyatded, but oky for now
     }
 
     private static ServerMetrics ConvertToDataBaseObjects(DataPackage data)
