@@ -39,7 +39,7 @@
       </card>
     </div>
 
-    <div class="col-md-6">
+    <div :class="this.networkServices.length > 0 ? 'col-md-6' : 'col-md-12'">
       <card type="task">
         <div class="container-fluid">
           <div v-for="service in this.networkServices" :key="service.id" class="row p-3 align-items-center service-panel mb-3 clickable-panel" @click="handleClick(service.id)">
@@ -58,7 +58,7 @@
     </div>
 
    
-    <div class="col-md-6">
+    <div v-if="this.networkServices.length > 0" class="col-md-6">
       <div class="row">
 
         <div class="col-md-12 mb-3">
@@ -91,7 +91,7 @@
                   <button class="btn btn-sm btn-primary btn-simple active w-100" @click="cloneService()">
                     <i class="tim-icons icon-refresh-01"></i> Clone
                   </button>
-                  <button class="btn btn-sm btn-primary btn-simple active w-100">
+                  <button class="btn btn-sm btn-primary btn-simple active w-100" @click="deleteService()">
                     <i class="tim-icons icon-simple-remove"></i> Delete
                   </button>
                 </div>
@@ -107,19 +107,23 @@
               <div class="row w-100 text-center">
                 <div class="col-md-3">
                   <h5>Last Response Time</h5>
-                  <p>{{ this.infoCardData.latestResponseTime }} ms</p>
+                  <p v-if="infoCardData.latestResponseTime !== 'N/A'">{{ infoCardData.latestResponseTime }} ms</p>
+                  <p v-else>{{ infoCardData.latestResponseTime }}</p>
                 </div>
                 <div class="col-md-3">
                   <h5>Avg Response Time</h5>
-                  <p>{{ this.infoCardData.avgResponseTimeRange }} ms</p>
+                  <p v-if="infoCardData.avgResponseTimeRange !== 'N/A'">{{ infoCardData.avgResponseTimeRange }} ms</p>
+                  <p v-else>{{ infoCardData.avgResponseTimeRange }}</p>
                 </div>
                 <div class="col-md-3">
                   <h5>24h Uptime</h5>
-                  <p>{{ this.infoCardData.uptimePercentage24h }}%</p>
+                  <p v-if="infoCardData.uptimePercentage24h !== 'N/A'">{{ infoCardData.uptimePercentage24h }}%</p>
+                  <p v-else>{{ infoCardData.uptimePercentage24h }}</p>
                 </div>
                 <div class="col-md-3">
                   <h5>Date Range Uptime</h5>
-                  <p>{{ this.infoCardData.uptimePercentageRange }}%</p>
+                  <p v-if="infoCardData.uptimePercentageRange !== 'N/A'">{{ infoCardData.uptimePercentageRange }}%</p>
+                  <p v-else>{{ infoCardData.uptimePercentageRange }}</p>
                 </div>
               </div>
             </div>
@@ -127,7 +131,7 @@
         </div>
 
         <!-- Chart Card -->
-        <div class="col-md-12">
+        <div v-if="this.apiDataPings.length !== 0" class="col-md-12">
           <card type="chart" ref="pingChart">
             <template slot="header">
               <h4 class="card-title">{{ $t("networkServices.chartHeader") }}</h4>
@@ -156,18 +160,16 @@
       modalClasses="custom-modal-class"
       :animationDuration="300"
     >
-      <!-- Header Slot -->
+
       <template v-slot:header>
         <h5 class="modal-title">Enter Service Details</h5>
       </template>
 
-      <!-- Footer Slot -->
       <template v-slot:footer>
         <button class="btn btn-secondary" @click="closeModal">Cancel</button>
         <button class="btn btn-primary" @click="handleSubmit">Submit</button>
       </template>
 
-      <!-- Form Content -->
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
           <label for="name">Name</label>
@@ -188,13 +190,13 @@
         </div>
 
         <div class="form-group">
-          <label for="interval">Interval</label>
+          <label for="interval">Interval, s</label>
           <input v-model.number="formData.interval" type="number" class="form-control" id="interval" :class="{'is-invalid': formErrors.interval}" required />
           <div v-if="formErrors.interval" class="invalid-feedback">{{ formErrors.interval }}</div>
         </div>
 
         <div class="form-group">
-          <label for="timeout">Timeout</label>
+          <label for="timeout">Timeout, ms</label>
           <input v-model.number="formData.timeout" type="number" class="form-control" id="timeout" :class="{'is-invalid': formErrors.timeout}" required />
           <div v-if="formErrors.timeout" class="invalid-feedback">{{ formErrors.timeout }}</div>
         </div>
@@ -220,8 +222,6 @@ import Modal from "@/components/Modal";
 import DateRangePicker from 'vue2-daterange-picker'
 import api from "../services/api";
 
-
-
 export default {
   components: {
     BarChart,
@@ -243,11 +243,15 @@ export default {
         applyLabel: 'Apply',
         cancelLabel: 'Cancel',
       },
+      isEditingNetworkService: false,
+      isAddingNetworkService: false,
+      isCloningNetworkService: false,
+      intervalId: 0,
       systemInfo: [],
       minDate: null,
       maxDate: null,
       currentSystem: null,
-      networkServices: null,
+      networkServices: [],
       selectedService: null,
       apiDataPings: [],
       showModal: false,
@@ -270,11 +274,9 @@ export default {
           labels: [],
           datasets: [
             {
-              backgroundColor: "#2380f7", // solid color for the bars
-              borderColor: "#2380f7", // optional border color
+              backgroundColor: "#2380f7",
+              borderColor: "#2380f7",
               label: "Ping Response Times",
-              fill: false,
-              borderColor: config.colors.info,
               borderWidth: 2,
               borderDash: [],
               borderDashOffset: 0.0,
@@ -283,15 +285,26 @@ export default {
           ],
         },
         gradientColors: config.colors.primaryGradient,
-        gradientStops: [1, 0.4, 0],
+        gradientStops: [1, 1, 1],
       },
     };
   },
   methods: {
-    handleSubmit() {
-      this.formErrors = {};
+    stopAutoUpdate() {
+      if (this.intervalId) {
+        clearInterval(this.intervalId);
+      }
+    },
+    async updatePage(){
 
-      
+      let ping = await apiService.getLatestNetworkServicePing(this.selectedService.id);
+      this.apiDataPings.push(ping);
+
+      this.initInfoCard();
+      this.initPingChart();
+    },
+    async handleSubmit() {
+      this.formErrors = {};
 
       let isValid = true;
       if (!this.formData.name) {
@@ -320,14 +333,31 @@ export default {
       }
 
       if (isValid) {
-        this.submitForm();
-        
-        this.showModal = false;
+
+        if (this.isAddingNetworkService || this.isCloningNetworkService)
+        {
+          await apiService.insertNetworkService(this.formData, this.systemInfo.name);
+          this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
+          if (this.selectedService == null)
+          {
+            this.selectedService = this.networkServices[0];
+          }
+
+          this.updateRangeValues(this.dateRange);
+        }
+        else if (this.isEditingNetworkService)
+        {
+          await apiService.updateNetworkService(this.selectedService, this.formData);
+          this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
+          this.selectedService = this.networkServices.find(s => s.id === this.selectedService.id) || this.networkServices[0];
+
+
+          //in case interval changed.
+          this.stopAutoUpdate();
+          this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+        }
+        this.closeModal();
       }
-    },
-    async submitForm() {
-      await apiService.insertNetworkService(this.formData, this.systemInfo.name);
-      this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
     },
     getLastPingTime() {
      
@@ -358,42 +388,86 @@ export default {
     },
     async updateRangeValues(newRange)
     {
-      this.dateRange.startDate = newRange.startDate.toISOString();
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(newRange.startDate)) {
+        this.dateRange.startDate = newRange.startDate;
+      } else {
+        this.dateRange.startDate = newRange.startDate.toISOString();
+      }
 
-      const endDate = newRange.endDate;
-
-      endDate.setMinutes(new Date().getMinutes());
-      endDate.setHours(new Date().getHours());
-      endDate.setSeconds(new Date().getSeconds());
-
-      this.dateRange.endDate = endDate.toISOString();
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(newRange.endDate)) {
+        const endDate = new Date(newRange.endDate);
+        const currentDate = new Date();
+        endDate.setMinutes(currentDate.getMinutes());
+        endDate.setHours(currentDate.getHours() + 2);
+        endDate.setSeconds(currentDate.getSeconds());
+        this.dateRange.endDate = endDate.toISOString(); 
+      } else {
+        const currentDate = new Date();
+        newRange.endDate.setMinutes(currentDate.getMinutes());
+        newRange.endDate.setHours(currentDate.getHours() + 2);
+        newRange.endDate.setSeconds(currentDate.getSeconds());
+        this.dateRange.endDate = newRange.endDate.toISOString(); 
+      }
       
       this.apiDataPings = await apiService.getNetworkServicePings(this.selectedService.id, this.dateRange);
+
       this.initInfoCard();
       this.initPingChart();
     },
+    async deleteService(){
+      this.networkServices = this.networkServices.filter(service => service.id !== this.selectedService.id);
+      await apiService.deleteNetworkService(this.selectedService.id);
+
+      if (this.networkServices.length === 0)
+      {
+        this.stopAutoUpdate();
+        this.selectedService = null;
+        this.apiDataPings = [];
+      }
+      else
+      {
+        this.selectedService = this.networkServices[0];
+        this.updateRangeValues(this.dateRange);
+      }
+    },
     addService(){
-      this.formData = [];
+      this.isAddingNetworkService = true;
+
       this.showModal = true;
+      this.formData = [];
     },
     editService(){
+      this.isEditingNetworkService = true;
+
       this.showModal = true;
       this.formData.name = this.selectedService.name;
+      this.formData.ip = this.selectedService.ip;
       this.formData.port = this.selectedService.port;
       this.formData.interval = this.selectedService.interval;
       this.formData.timeout = this.selectedService.timeout;
       this.formData.expected_status = this.selectedService.timeout;
     },
     cloneService(){
-      this.showModal = true;
+      this.isCloningNetworkService = true;
       this.showModal = true;
       this.formData.name = this.selectedService.name;
+      this.formData.ip = this.selectedService.ip;
       this.formData.port = this.selectedService.port;
       this.formData.interval = this.selectedService.interval;
       this.formData.timeout = this.selectedService.timeout;
       this.formData.expected_status = this.selectedService.timeout;
     },
     initInfoCard() {
+
+      if (this.apiDataPings === null)
+      {
+        this.infoCardData.latestResponseTime = "N/A";
+        this.infoCardData.avgResponseTimeRange = "N/A";
+        this.infoCardData.uptimePercentageRange = "N/A";
+        this.infoCardData.uptimePercentage24h = "N/A";
+        return;
+      }
+
       // latest response time
       this.infoCardData.latestResponseTime = this.apiDataPings.length > 0 ? this.apiDataPings.at(-1).responseTime : 0;
 
@@ -402,7 +476,7 @@ export default {
         return item.timestamp >= this.dateRange.startDate && item.timestamp <= this.dateRange.endDate;
       });
 
-      const filteredArr = filteredArrByDateRange.filter(item => item.responseTime !== 0);
+      const filteredArr = filteredArrByDateRange.filter(item => item.responseTime !== this.selectedService.timeout);
       const sum = filteredArr.reduce((acc, item) => acc + item.responseTime, 0);  
       this.infoCardData.avgResponseTimeRange = filteredArr.length > 0 ? (sum / filteredArr.length).toFixed(2) : 0;
 
@@ -416,7 +490,7 @@ export default {
         return ping.timestamp >= last24Hours;
       });
 
-      const filteredArr24h = filteredPings24h.filter(item => item.responseTime !== 0);
+      const filteredArr24h = filteredPings24h.filter(item => item.responseTime !== this.selectedService.timeout);
       this.infoCardData.uptimePercentage24h = filteredPings24h.length > 0 ? ((filteredArr24h.length / filteredPings24h.length) * 100).toFixed(2) : 0;
     },
     openModal() {
@@ -424,9 +498,14 @@ export default {
     },
     closeModal() {
       this.showModal = false;
+      this.isEditingNetworkService = false;
+      this.isAddingNetworkService = false;
+      this.isCloningNetworkService = false;
     },
     async handleClick(id) {
-      this.apiDataPings = await apiService.getNetworkServicePings(id, null);
+      this.selectedService = this.networkServices.find(service => service.id === id);
+      this.updateRangeValues(this.dateRange);
+      this.initInfoCard();
       this.initPingChart();
     },
     initPingChart()
@@ -435,27 +514,22 @@ export default {
         labels: [],
         datasets: [
           {
-            fill: true,
-            borderColor: config.colors.primary,
-            borderWidth: 2,
-            borderDash: [],
-            borderDashOffset: 0.0,
-            pointBackgroundColor: config.colors.primary,
-            pointBorderColor: "rgba(255,255,255,0)",
-            pointHoverBackgroundColor: config.colors.primary,
-            pointBorderWidth: 20,
-            pointHoverRadius: 4,
-            pointHoverBorderWidth: 15,
-            pointRadius: 4,
+            backgroundColor: this.apiDataPings.map(pingData =>
+              pingData.responseTime >= this.selectedService.timeout ? "#ff0000" : config.colors.primary
+            ),
+            borderColor: this.apiDataPings.map(pingData =>
+              pingData.responseTime >= this.selectedService.timeout ? "#ff0000" : config.colors.primary
+            ),
+            borderWidth: 2, 
             label: "ms: ",
-            data: this.apiDataPings.map((pingData) => pingData.responseTime),
-          },
+            data: this.apiDataPings.map(pingData => pingData.responseTime),
+          }
         ],
       };
 
       chartData.datasets[0].categoryPercentage = 1;
       chartData.datasets[0].barPercentage = 1;
-      
+
       chartData.labels = this.apiDataPings.map(pingData => {
         const date = new Date(pingData.timestamp);
         const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
@@ -464,7 +538,6 @@ export default {
       });
       
       this.pingChart.chartData = chartData;
-
     }
   },
   async mounted() 
@@ -474,8 +547,6 @@ export default {
     this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
     this.selectedService = this.networkServices[0];
 
-    console.log(this.networkServices);
-
     const date = new Date(this.selectedService.last_checked);
     this.minDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
 
@@ -484,20 +555,20 @@ export default {
     this.dateRange.startDate = minDateObj.toISOString();
 
     const today = new Date();
+    today.setHours(today.getHours() + 2); // Add 2 hours
+
     this.maxDate = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
     this.dateRange.endDate = today.toISOString();
-    
-    this.apiDataPings = await apiService.getNetworkServicePings(this.selectedService.id, this.dateRange);
-    
+
+    this.updateRangeValues(this.dateRange);
+    this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+
     //const maxResponseTime = Math.max(...this.apiDataPings.map(item => item.responseTime));
     //this.apiDataPings.forEach(item => {
     //  if (item.responseTime === 0) {
     //    item.responseTime = -this.selectedService.timeout * 1000;
     //  }
     //});
-
-    this.initInfoCard();
-    this.initPingChart();
   },
 };
 </script>

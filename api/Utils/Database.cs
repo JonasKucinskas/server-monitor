@@ -189,6 +189,45 @@ public class Database
         return pings;
     }
 
+    public async Task<PingData> FetchLatestNetworkServicePing(int serviceId)
+    {
+        await OpenConnAsync();
+        
+        string networkServicePingsQuery = @"
+            SELECT * FROM networkServicePings WHERE service_id = @serviceId ORDER BY timestamp DESC LIMIT 1;
+        ";
+
+        await using var cmd = new NpgsqlCommand(networkServicePingsQuery, conn);
+        cmd.Parameters.AddWithValue("serviceId", serviceId);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        var ping = new PingData();
+
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                ping.id = reader.GetInt32(reader.GetOrdinal("id")); 
+                ping.serviceId = reader.GetInt32(reader.GetOrdinal("service_id")); 
+                ping.isUp = reader.GetBoolean(reader.GetOrdinal("is_up"));  
+                ping.responseTime = reader.GetFloat(reader.GetOrdinal("response_time")); 
+                ping.errorMessage = reader.GetString(reader.GetOrdinal("error_message")); 
+                ping.timestamp = reader.GetDateTime(reader.GetOrdinal("timestamp"));  
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching ping with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return ping;
+    }
+
     public async Task<List<SystemData>> FetchAllSystems(int userId)
     {
         await OpenConnAsync();
@@ -593,6 +632,51 @@ public class Database
     {
         await OpenConnAsync();
         await service.InsertToDatabase(conn);
+        await CloseConnAsync();
+    }
+
+    public async Task UpdateNetworkService(NetworkService service)
+    {
+        await OpenConnAsync();
+        
+        await using var cmd = new NpgsqlCommand(@"UPDATE networkServices SET name = @name, ip = @ip, interval = @interval, timeout = @timeout, expected_status = @expected_status WHERE id = @id;", conn);
+
+        cmd.Parameters.AddWithValue("name", service.name);
+        cmd.Parameters.AddWithValue("ip", service.ip);
+        cmd.Parameters.AddWithValue("interval", service.interval);
+        cmd.Parameters.AddWithValue("timeout", service.timeout);
+        cmd.Parameters.AddWithValue("expected_status", service.expected_status);
+        cmd.Parameters.AddWithValue("id", service.id);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
+    public async Task DeleteNetworkService(int serviceId)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM networkServices WHERE id = @serviceId;", conn);
+
+        cmd.Parameters.AddWithValue("serviceId", serviceId);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+        await DeleteNetworkServicePings(serviceId);
+    }
+
+    public async Task DeleteNetworkServicePings(int serviceId)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM networkServicePings WHERE service_id = @serviceId;", conn);
+
+        cmd.Parameters.AddWithValue("serviceId", serviceId);
+
+        await cmd.ExecuteNonQueryAsync();
+        
         await CloseConnAsync();
     }
 

@@ -6,7 +6,59 @@ const apiClient = axios.create({
 });
 
 export default {
+  getLatestNetworkServicePing(serviceId)
+  {
+    return apiClient.get("/networkServices/pings/latest", {
+      params: { 
+        serviceId,
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  updateNetworkService(service, serviceData) {
+    
+    const cleanService = {
+      id: service.id,
+      systemId: service.systemId,
+      name: serviceData.name,
+      ip: serviceData.ip,
+      port: serviceData.port,
+      interval: serviceData.interval, 
+      timeout: serviceData.timeout,
+      expected_status: serviceData.expected_status,
+      last_checked: service.last_checked
+    }
 
+    return apiClient.put(`/networkServices/`, cleanService)
+      .then(response => {
+        return response.data
+      })
+      .catch(error => {
+        console.error("Error executing command:", error);
+        throw error; 
+      });
+  },
+  deleteNetworkService(serviceId)
+  {
+    return apiClient.delete("/networkServices", {
+      params: { 
+        serviceId,
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   insertNetworkService(networkService, system_name)
   {
     const cleanService = {

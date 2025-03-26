@@ -11,7 +11,6 @@ using Npgsql;
 public class PingerService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly HttpClient _httpClient = new();
 
     public PingerService(IServiceProvider serviceProvider)
     {
@@ -26,14 +25,13 @@ public class PingerService : BackgroundService
             var db = scope.ServiceProvider.GetRequiredService<Database>();
 
             List<NetworkService> targets = await db.FetchAllNetworkServices(null);
-            Console.WriteLine(targets.Count);
-
-
-            List<Task> tasks = targets.Select(target => Pinger.PingOnceAsync(target, _httpClient, db, stoppingToken)).ToList();
+            List<Task> tasks = targets.Select(async target =>
+            {
+                await Pinger.PingOnceAsync(target, db, stoppingToken);
+                await Task.Delay(target.interval * 1000, stoppingToken);
+            }).ToList();
 
             await Task.WhenAll(tasks);
-
-            await Task.Delay(1000);
         }
     }
 }
