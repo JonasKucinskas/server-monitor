@@ -40,19 +40,26 @@
     </div>
 
     <div :class="this.networkServices.length > 0 ? 'col-md-6' : 'col-md-12'">
-      <card type="task">
-        <div class="container-fluid">
-          <div v-for="service in this.networkServices" :key="service.id" class="row p-3 align-items-center service-panel mb-3 clickable-panel" @click="handleClick(service.id)">
-            <div class="col-md-3">
-              <span class="badge">up</span>
+      <card type="task" class="d-flex flex-column justify-content-center align-items-center h-100" style="min-height: 200px;">
+        <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center align-items-center">
+          <template v-if="this.networkServices.length > 0">
+            <div v-for="service in this.networkServices" :key="service.id" class="row p-3 align-items-center service-panel mb-3 clickable-panel" @click="handleClick(service.id)">
+              <div class="col-md-3">
+                <span class="badge">up</span>
+              </div>
+              <div class="col-md-4">
+                <h5 class="mb-0">{{ service.name }}</h5>
+              </div>
+              <div class="col-md-5 text-end">
+                <span>IP Address: {{ service.ip }} Port: {{ service.port }}</span>
+              </div>
             </div>
-            <div class="col-md-4">
-              <h5 class="mb-0">{{ service.name }}</h5>
+          </template>
+          <template v-else>
+            <div class="d-flex flex-column justify-content-center align-items-center h-100">
+              <h3>No Services</h3>
             </div>
-            <div class="col-md-5 text-end">
-              <span>IP Address: {{ service.ip }} Port: {{ service.port }}</span>
-            </div>
-          </div>
+          </template>
         </div>
       </card>
     </div>
@@ -91,7 +98,7 @@
                   <button class="btn btn-sm btn-primary btn-simple active w-100" @click="cloneService()">
                     <i class="tim-icons icon-refresh-01"></i> Clone
                   </button>
-                  <button class="btn btn-sm btn-primary btn-simple active w-100" @click="deleteService()">
+                  <button class="btn btn-sm btn-primary btn-simple active w-100" @click="showDeleteConfirmation()">
                     <i class="tim-icons icon-simple-remove"></i> Delete
                   </button>
                 </div>
@@ -209,6 +216,28 @@
       </form>
     </Modal>
 
+    <!-- Delete Confirmation Modal -->
+    <Modal
+      :show="showDeleteConfirmationModal"
+      @close="closeDeleteConfirmation"
+      type="notice"
+      :centered="true"
+      gradient="danger"
+      modalClasses="custom-modal-class"
+      :animationDuration="300"
+    >
+      <template v-slot:header>
+        <h5 class="modal-title">Confirm Deletion</h5>
+      </template>
+
+      <template v-slot:footer>
+        <button class="btn btn-secondary" @click="closeDeleteConfirmation">Cancel</button>
+        <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+      </template>
+
+      <p>Are you sure you want to delete the service <strong>{{ this.selectedService?.name }}</strong>?</p>
+    </Modal>
+
   </div>
 </template>
 
@@ -255,6 +284,7 @@ export default {
       selectedService: null,
       apiDataPings: [],
       showModal: false,
+      showDeleteConfirmationModal: false,
       formErrors: {},
       formData: {
         name: '',
@@ -290,14 +320,35 @@ export default {
     };
   },
   methods: {
+    showDeleteConfirmation() {
+      this.showDeleteConfirmationModal = true;
+    },
+    closeDeleteConfirmation() {
+      this.showDeleteConfirmationModal = false;
+    },
     stopAutoUpdate() {
       if (this.intervalId) {
         clearInterval(this.intervalId);
       }
     },
+    startAutoUpdate(){
+      this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+    },
+    async confirmDelete() {
+      await this.deleteService(this.selectedService.id);
+      
+      this.stopAutoUpdate();
+      if (this.selectedService !== null)
+      {
+        this.startAutoUpdate();
+      }
+      
+      this.closeDeleteConfirmation();
+    },
     async updatePage(){
 
       let ping = await apiService.getLatestNetworkServicePing(this.selectedService.id);
+      console.log("requesting");
       this.apiDataPings.push(ping);
 
       this.initInfoCard();
@@ -338,12 +389,17 @@ export default {
         {
           await apiService.insertNetworkService(this.formData, this.systemInfo.name);
           this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
+          
+          this.stopAutoUpdate();
+          
           if (this.selectedService == null)
           {
             this.selectedService = this.networkServices[0];
+            this.startAutoUpdate();
           }
 
           this.updateRangeValues(this.dateRange);
+          this.startAutoUpdate();
         }
         else if (this.isEditingNetworkService)
         {
@@ -351,10 +407,10 @@ export default {
           this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
           this.selectedService = this.networkServices.find(s => s.id === this.selectedService.id) || this.networkServices[0];
 
-
+          console.log(this.formData);
           //in case interval changed.
           this.stopAutoUpdate();
-          this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+          this.startAutoUpdate();
         }
         this.closeModal();
       }
@@ -445,7 +501,7 @@ export default {
       this.formData.port = this.selectedService.port;
       this.formData.interval = this.selectedService.interval;
       this.formData.timeout = this.selectedService.timeout;
-      this.formData.expected_status = this.selectedService.timeout;
+      this.formData.expected_status = this.selectedService.expected_status;
     },
     cloneService(){
       this.isCloningNetworkService = true;
@@ -455,7 +511,7 @@ export default {
       this.formData.port = this.selectedService.port;
       this.formData.interval = this.selectedService.interval;
       this.formData.timeout = this.selectedService.timeout;
-      this.formData.expected_status = this.selectedService.timeout;
+      this.formData.expected_status = this.selectedService.expected_status;
     },
     initInfoCard() {
 
@@ -503,10 +559,16 @@ export default {
       this.isCloningNetworkService = false;
     },
     async handleClick(id) {
+
+      if (this.selectedService.id === id)
+      {
+        return;  
+      }
+      this.stopAutoUpdate();
       this.selectedService = this.networkServices.find(service => service.id === id);
       this.updateRangeValues(this.dateRange);
-      this.initInfoCard();
-      this.initPingChart();
+
+      this.startAutoUpdate();
     },
     initPingChart()
     {
@@ -560,8 +622,10 @@ export default {
     this.maxDate = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
     this.dateRange.endDate = today.toISOString();
 
+    console.log(this.dateRange);
+
     this.updateRangeValues(this.dateRange);
-    this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+    this.startAutoUpdate();
 
     //const maxResponseTime = Math.max(...this.apiDataPings.map(item => item.responseTime));
     //this.apiDataPings.forEach(item => {

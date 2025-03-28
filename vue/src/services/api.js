@@ -150,21 +150,21 @@ export default {
   },
   execCommand(command, system) {
     const cleanSystem = {
-        id: system.id,
-        ip: system.ip,
-        port: system.port,
-        name: system.name,
-        ownerId: system.ownerId, 
-        creationDate: system.creationDate
+      id: system.id,
+      ip: system.ip,
+      port: system.port,
+      name: system.name,
+      ownerId: system.ownerId, 
+      creationDate: system.creationDate
     };
     
     return apiClient.post(`/command/execute?Command=${encodeURIComponent(command)}`, cleanSystem)
     .then(response => {
-        return response.data;
+      return response.data;
     })
     .catch(error => {
-        console.error("Error executing command:", error);
-        throw error;
+      console.error("Error executing command:", error);
+      throw error;
     });
   },
   getSystems(userId) {

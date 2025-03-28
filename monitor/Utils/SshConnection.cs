@@ -160,35 +160,32 @@ public class SshConnection
         {
             //exec command 
 
-            string[] commandParts = e.CommandText.Split(' ');
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = commandParts[0],  //first item.
-                Arguments = string.Join(" ", commandParts.Skip(1)), //everything after first word.
-                RedirectStandardOutput = true, 
-                UseShellExecute = false, 
+                FileName = "/bin/bash", 
+                Arguments = $"-c \"{e.CommandText}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
                 CreateNoWindow = true
             };
 
-            try
+            using (Process process = new Process { StartInfo = startInfo })
             {
-                Process process = new Process { StartInfo = startInfo };
                 process.Start();
-
                 string output = process.StandardOutput.ReadToEnd();
-
+                string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
-                    
-                Console.WriteLine("Command output: " + output);
+
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Console.WriteLine("Error: " + error);
+                    e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes(error));
+                    e.Channel.SendClose();
+                    return;;
+                }
+                Console.WriteLine("Output: " + output);
                 e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes(output));
-                e.Channel.SendClose();
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"{DateTime.Now} failed to exec {e.CommandText} command");
-                Console.WriteLine(ex.Message);
- 
-                e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes($"{DateTime.Now} failed to exec {e.CommandText} command."));
                 e.Channel.SendClose();
             }
         }

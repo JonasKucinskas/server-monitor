@@ -96,11 +96,11 @@ public class Database
         return services;
     }
 
-    public async Task<List<NetworkService>> FetchNetworkServiceById(string systemId)
+    public async Task<NetworkService> FetchNetworkServiceById(string systemId)
     {
         await OpenConnAsync();
 
-        var services = new List<NetworkService>();
+        var service = new NetworkService();
 
         string serverMetricsQuery = @"
             SELECT * FROM networkServices WHERE system_id = @systemId;
@@ -115,19 +115,14 @@ public class Database
         {
             while (await reader.ReadAsync())
             {
-                var networkService = new NetworkService
-                {
-                    id = reader.GetInt32(reader.GetOrdinal("id")),
-                    systemId = reader.GetString(reader.GetOrdinal("system_id")),
-                    name = reader.GetString(reader.GetOrdinal("name")),
-                    ip = reader.GetString(reader.GetOrdinal("ip")),
-                    port = reader.GetInt32(reader.GetOrdinal("port")),
-                    interval = reader.GetInt32(reader.GetOrdinal("interval")),
-                    timeout = reader.GetInt32(reader.GetOrdinal("timeout")),
-                    expected_status = reader.GetInt32(reader.GetOrdinal("expected_status")),
-                };
-
-                services.Add(networkService);
+                service.id = reader.GetInt32(reader.GetOrdinal("id"));
+                service.systemId = reader.GetString(reader.GetOrdinal("system_id"));
+                service.name = reader.GetString(reader.GetOrdinal("name"));
+                service.ip = reader.GetString(reader.GetOrdinal("ip"));
+                service.port = reader.GetInt32(reader.GetOrdinal("port"));
+                service.interval = reader.GetInt32(reader.GetOrdinal("interval"));
+                service.timeout = reader.GetInt32(reader.GetOrdinal("timeout"));
+                service.expected_status = reader.GetInt32(reader.GetOrdinal("expected_status"));
             }
         }
         catch (Exception ex)
@@ -140,7 +135,7 @@ public class Database
             await CloseConnAsync();
         }
 
-        return services;
+        return service;
     }
     
     public async Task<List<PingData>> FetchNetworkServicePings(int serviceId, DateTime startTime, DateTime endTime)
@@ -639,17 +634,17 @@ public class Database
     {
         await OpenConnAsync();
         
-        await using var cmd = new NpgsqlCommand(@"UPDATE networkServices SET name = @name, ip = @ip, interval = @interval, timeout = @timeout, expected_status = @expected_status WHERE id = @id;", conn);
+        await using var cmd = new NpgsqlCommand(@"UPDATE networkServices SET name = @name, ip = @ip, port = @port, interval = @interval, timeout = @timeout, expected_status = @expected_status WHERE id = @id;", conn);
 
         cmd.Parameters.AddWithValue("name", service.name);
         cmd.Parameters.AddWithValue("ip", service.ip);
+        cmd.Parameters.AddWithValue("port", service.port);
         cmd.Parameters.AddWithValue("interval", service.interval);
         cmd.Parameters.AddWithValue("timeout", service.timeout);
         cmd.Parameters.AddWithValue("expected_status", service.expected_status);
         cmd.Parameters.AddWithValue("id", service.id);
-
-        await cmd.ExecuteNonQueryAsync();
         
+        await cmd.ExecuteNonQueryAsync();
         await CloseConnAsync();
     }
 

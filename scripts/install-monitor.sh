@@ -26,7 +26,7 @@ case "$1" in
   printf "Options: \n"
   printf "  -k                    : SSH key (required, or interactive if not provided)\n"
   printf "  -p                    : Port (default: $PORT)\n"
-  printf "  -u                    : Uninstall Beszel Agent\n"
+  printf "  -u                    : Uninstall monitor agent\n"
   exit 0
   ;;
 esac
@@ -98,7 +98,7 @@ if [ "$UNINSTALL" = true ]; then
   
   systemctl daemon-reload
 
-  echo "Removing the Beszel Agent directory..."
+  echo "Removing the monitor agent directory..."
   rm -rf /opt/monitor-agent
 
   echo "Removing the dedicated user for the agent service..."

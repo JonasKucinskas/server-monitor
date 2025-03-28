@@ -33,6 +33,7 @@
     "userProfile": "User Profile",
     "services": "Services",
     "networkServices": "Network Services",
+    "terminal": "Terminal",
     "uptimes": "Uptimes",
     "typography": "Typography"
   },
@@ -47,4 +48,5 @@
     "infoChartFooter": "Service Information",
     "chartHeader": "Service Response Times"
   }
+
 }
