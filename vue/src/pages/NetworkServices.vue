@@ -107,7 +107,7 @@
           </card>
         </div>
 
-        <!--info card -->
+        
         <div class="col-md-12 mb-3">
           <card type="task">
             <div class="container-fluid h-100 d-flex align-items-center justify-content-center">
@@ -137,7 +137,7 @@
           </card>
         </div>
 
-        <!-- Chart Card -->
+        
         <div v-if="this.apiDataPings.length !== 0" class="col-md-12">
           <card type="chart" ref="pingChart">
             <template slot="header">
@@ -249,7 +249,7 @@ import config from "@/config";
 import apiService from "@/services/api"; 
 import Modal from "@/components/Modal";
 import DateRangePicker from 'vue2-daterange-picker'
-import api from "../services/api";
+import NotificationTemplate from "./Notifications/NotificationTemplate";
 
 export default {
   components: {
@@ -320,6 +320,18 @@ export default {
     };
   },
   methods: {
+    notifyVue(message) {
+      this.$notify({
+        component: NotificationTemplate,
+        message: message,
+        icon: "ticon",
+        icon: "tim-icons icon-bell-55",
+        horizontalAlign: 'center',
+        verticalAlign: 'top',
+        type: "danger",
+        timeout: 3000,
+      });
+    },
     showDeleteConfirmation() {
       this.showDeleteConfirmationModal = true;
     },
@@ -344,11 +356,20 @@ export default {
       }
       
       this.closeDeleteConfirmation();
+
+      this.notifyVue('Network Service Deleted!');
     },
     async updatePage(){
 
       let ping = await apiService.getLatestNetworkServicePing(this.selectedService.id);
-      console.log("requesting");
+
+      if (this.apiDataPings.length > 0){
+        if (ping.id == this.apiDataPings[this.apiDataPings.length - 1].id || ping.id == 0)
+        {
+          return;  
+        }
+      }
+
       this.apiDataPings.push(ping);
 
       this.initInfoCard();

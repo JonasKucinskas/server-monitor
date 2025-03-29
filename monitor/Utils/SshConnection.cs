@@ -71,7 +71,6 @@ public class SshConnection
             var service = (ConnectionService)e;
             service.CommandOpened += service_CommandOpenedAsync;
             service.EnvReceived += service_EnvReceived;
-
         }
     }
 

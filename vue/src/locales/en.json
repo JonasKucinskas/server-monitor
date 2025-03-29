@@ -14,15 +14,16 @@
     "cpuUsageFooter": "Average system-wide CPU utilization",
     "cpuChartCategories": ["Overall Usage", "All Cores", "Frequency"],
     "networkChartCategories": ["Overall Usage", "All Interfaces"],
-    "networkChartExtraCategories": ["Download", "Upload"],
-    "dropdown": {
-      "action": "Action",
-      "anotherAction": "Another Action",
-      "somethingElse": "Something else"
-    }
+    "networkChartExtraCategories": ["Download", "Upload"]
   },
   "services": {
-    "title": "Services"
+    "header": "Services",
+    "footer": "Resource Usage For Systemd Control Groups.",
+
+    "dropdown": {
+      "stopUpdates": "Stop Updates",
+      "resumeUpdates": "Resume Updates"
+    }
   },
   "sidebar": {
     "shortTitle": "CT",
@@ -47,6 +48,9 @@
     "infoChartHeader": "Service Information",
     "infoChartFooter": "Service Information",
     "chartHeader": "Service Response Times"
+  },
+  "terminal":{
+    "header": "Terminal",
+    "footer": "Execute non real-time commands."
   }
-
 }
