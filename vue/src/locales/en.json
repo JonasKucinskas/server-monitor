@@ -35,6 +35,7 @@
     "services": "Services",
     "networkServices": "Network Services",
     "terminal": "Terminal",
+    "filemanager": "File Manager",
     "uptimes": "Uptimes",
     "typography": "Typography"
   },

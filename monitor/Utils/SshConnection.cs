@@ -172,17 +172,22 @@ public class SshConnection
             using (Process process = new Process { StartInfo = startInfo })
             {
                 process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
 
-                if (!string.IsNullOrEmpty(error))
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+                bool exited = process.WaitForExit(10000);
+
+                if (!exited)
                 {
-                    Console.WriteLine("Error: " + error);
-                    e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes(error));
-                    e.Channel.SendClose();
-                    return;;
+                    Console.WriteLine("Process did not exit in 5 seconds. Killing...");
+                    process.Kill();
+                    process.WaitForExit();
                 }
+
+                string output = outputTask.Result;
+                string error = errorTask.Result;
+
                 Console.WriteLine("Output: " + output);
                 e.Channel.SendData(System.Text.Encoding.UTF8.GetBytes(output));
                 e.Channel.SendClose();

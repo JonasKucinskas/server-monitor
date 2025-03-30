@@ -12,6 +12,7 @@ const Services = () => import("@/pages/Services.vue");
 const Systems = () => import("@/pages/Systems.vue");
 const NetworkServices = () => import("@/pages/NetworkServices.vue");
 const Terminal = () => import("@/pages/Terminal.vue");
+const FileManager = () => import("@/pages/FileManager.vue");
 
 
 
@@ -28,6 +29,7 @@ const routes = [
       { path: "services", name: "services", component: Services },
       { path: "networkServices", name: "networkServices", component: NetworkServices },
       { path: "terminal", name: "terminal", component: Terminal },
+      { path: "filemanager", name: "filemanager", component: FileManager },
       { path: "", redirect: "dashboard" }
     ],
   },

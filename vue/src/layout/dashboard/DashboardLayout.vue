@@ -18,6 +18,11 @@
           icon="tim-icons icon-atom"
         />
         <sidebar-link
+          :to="`/systems/${this.$route.params.systemName}/filemanager`"
+          :name="$t('sidebar.filemanager')"
+          icon="tim-icons icon-atom"
+        />
+        <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/terminal`"
           :name="$t('sidebar.terminal')"
           icon="tim-icons icon-atom"

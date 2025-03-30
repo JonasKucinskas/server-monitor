@@ -363,8 +363,12 @@ export default {
 
       let ping = await apiService.getLatestNetworkServicePing(this.selectedService.id);
 
+      if (ping.id == 0){
+        return;
+      }
+
       if (this.apiDataPings.length > 0){
-        if (ping.id == this.apiDataPings[this.apiDataPings.length - 1].id || ping.id == 0)
+        if (ping.id == this.apiDataPings[this.apiDataPings.length - 1].id)
         {
           return;  
         }

@@ -3,6 +3,8 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+vue/src/main.js
+
 .vscode/
 vue/public
 vue/src/assets
