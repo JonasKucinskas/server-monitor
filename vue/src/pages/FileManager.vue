@@ -138,13 +138,16 @@ export default {
             await this.loadFileStructure();
         },
         async onBeforeMove(args) {
-            if (args.isCopy === true){
-                if (args.itemData[0].isFile){
+            if (args.isCopy === true)
+            {
+                if (args.itemData[0].isFile)
+                {
                     await apiService.execCommand(`cp ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
                 }
                 else await apiService.execCommand(`cp -r ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
             }
-            else{
+            else
+            {
                 await apiService.execCommand(`mv ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
             }
         },
@@ -214,3 +217,49 @@ export default {
     },
 };
 </script>
+
+<style>
+#overview_file {
+  min-height: 660px;
+}
+.e-filemanager{
+    background: #344675,
+}
+.e-filemanager .e-toolbar {
+  border-bottom-color: #344675;
+}
+.e-toolbar {
+  -webkit-tap-highlight-color: #1d1d2c;
+  background: #1d1d2c;
+}
+.e-filemanager .e-address .e-address-list-item:last-child .e-list-text {
+  color: #ffffff;
+}
+.e-filemanager .e-address {
+  background: #1d1d2c;
+}
+.e-navigation {
+  background: #1d1d2c;
+}
+.e-grid .e-content {
+  background-color: #1d1d2c;
+}
+.e-grid .e-table {
+  background-color: #1d1d2c;
+}
+.e-fe-text {
+    color:#ffffff
+}
+.e-row:hover .e-fe-text {
+  color: #000000;
+}
+
+.e-rowcell {
+  color: #ffffff !important;
+}
+
+/* When the row is hovered, change all text in the row to black */
+.e-row:hover .e-rowcell {
+  color: #000000 !important;
+}
+</style>
