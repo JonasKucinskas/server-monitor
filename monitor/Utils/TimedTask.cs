@@ -2,8 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace monitor;
-
 public class TimedTask
 {
     private readonly Func<Task> _task;

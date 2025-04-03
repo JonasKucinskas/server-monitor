@@ -70,7 +70,7 @@ public sealed class MultiSshConnection
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{DateTime.Now}: Error running command on {agentIpAddress}:{port}:{"monitor"}: {ex.Message}");
+                Console.WriteLine($"{DateTime.Now}: Error running {command} command on {agentIpAddress}:{port}:{"monitor"}: {ex.Message}");
             }
         }
         else

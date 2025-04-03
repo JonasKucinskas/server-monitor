@@ -24,12 +24,15 @@
             :view="view"
             :toolbarSettings="toolbarSettings"
             :contextMenuSettings="contextMenuSettings"
+            :uploadSettings="uploadSettings"
+            :navigationPaneSettings="navigationPaneSettings"
             @delete="onDelete"
             @rename="onRename"
             @folderCreate="onFolderCreate"
             @refreshFiles="onFilesRefresh"
             @beforeDownload="onBeforeDownload"
             @beforeMove="onBeforeMove"
+            @uploadListCreate="onBeforeSendRequest"
           ></ejs-filemanager>
         </div>
       </card>
@@ -38,7 +41,7 @@
 </template>
 
 <script>
-import { FileManagerComponent, NavigationPane, Toolbar, DetailsView } from "@syncfusion/ej2-vue-filemanager";
+import { FileManagerComponent, NavigationPane, Toolbar, DetailsView, NavigationPaneSettings, UploadSettings } from "@syncfusion/ej2-vue-filemanager";
 import apiService from "@/services/api";
 
 export default {
@@ -51,11 +54,11 @@ export default {
         fileData: [],
         currentSystem: [],
         toolbarSettings: {
-            items: ["NewFolder", "SortBy", "Cut", "Copy", "Paste", "Delete", "Refresh", "Download", "Rename", "Selection", "View", "Details"],
+            items: ["NewFolder", "Upload", "SortBy", "Cut", "Copy", "Paste", "Delete", "Refresh", "Download", "Rename", "Selection", "View", "Details"],
         },
         contextMenuSettings: {
             file: ["Cut", "Copy", "|", "Delete", "Download", "Rename", "|", "Details"],
-            layout: ["SortBy", "View", "Refresh", "|", "Paste", "|", "NewFolder", "|", "Details", "|", "SelectAll"],
+            layout: ["SortBy", "View", "Refresh", "|", "Paste", "|", "NewFolder", "|", "Uplpad", "|", "Details", "|", "SelectAll"],
             visible: true,
         },
         view: "Details",
@@ -79,7 +82,13 @@ export default {
             },
             ],
         },
-        };
+        uploadSettings:{
+          autoUpload: true
+        },
+        navigationPaneSettings:{
+          visible: false
+        }
+      };
     },
     provide: {
         filemanager: [NavigationPane, DetailsView, Toolbar],
@@ -90,6 +99,46 @@ export default {
         await this.loadFileStructure();
     },
     methods: {
+        async onBeforeSendRequest(args){
+          const rawFile = args.fileInfo.rawFile;
+          console.log(args);
+          if (rawFile instanceof File) {
+            const base64File = await this.convertFileToBase64(rawFile);
+
+            const chunkSize = 32768 - new TextEncoder().encode(`printf "%s" "" | base64 -d >> ${args.fileInfo.name}`).length;
+            const totalChunks = Math.ceil(new TextEncoder().encode(base64File).length / chunkSize);
+            
+
+            console.log("chunk size");
+            console.log(chunkSize);
+            console.log("totalChunks");
+            console.log(totalChunks);
+            console.log("totalsize");
+            console.log(new TextEncoder().encode(base64File).length);
+
+            for (let i = 0; i < totalChunks; i++) 
+            {
+              const chunk = base64File.slice(i * chunkSize, (i + 1) * chunkSize);
+              console.log("Base64 chunk", chunk.slice(0, 100));
+              
+              await apiService.execCommand(`printf "%s" "${chunk}" | base64 -d >> ${args.fileInfo.name}`, this.currentSystem);
+            }
+          }
+          else{
+            console.log("not File format");
+          }
+        },
+        async convertFileToBase64(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result.split(',')[1];
+              resolve(base64String); 
+            };
+            reader.onerror = reject; 
+            reader.readAsDataURL(file);  
+          });
+        },
         async onBeforeDownload(args){
             args.cancel = true;
             
@@ -258,7 +307,6 @@ export default {
   color: #ffffff !important;
 }
 
-/* When the row is hovered, change all text in the row to black */
 .e-row:hover .e-rowcell {
   color: #000000 !important;
 }

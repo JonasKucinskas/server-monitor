@@ -149,6 +149,7 @@ export default {
     });
   },
   execCommand(command, system) {
+
     const cleanSystem = {
       id: system.id,
       ip: system.ip,
@@ -158,14 +159,20 @@ export default {
       creationDate: system.creationDate
     };
     
-    return apiClient.post(`/command/execute?Command=${encodeURIComponent(command)}`, cleanSystem)
-    .then(response => {
-      return response.data;
-    })
-    .catch(error => {
-      console.error("Error executing command:", error);
-      throw error;
-    });
+    const payload = {
+      command: command, 
+      SystemInfo: cleanSystem 
+    };
+  
+    return apiClient.post(`/command/execute`, payload)
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        console.error("Error executing command:", error);
+        throw error;
+      }
+    );
   },
   getSystems(userId) {
     return apiClient.get("/systems/all", {

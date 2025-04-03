@@ -1,8 +1,3 @@
-using System.Runtime.CompilerServices;
-using Monitor;
-
-namespace monitor;
-
 public static class AverageCalculator
 {
     public static Cpu Cpu(List<DataPackage> dataPackages)

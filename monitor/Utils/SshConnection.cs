@@ -5,11 +5,8 @@ using System.Text.RegularExpressions;
 using FxSsh;
 using FxSsh.Messages.Userauth;
 using FxSsh.Services;
-using Monitor;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Tls;
-
-namespace monitor;
 
 public class SshConnection
 {
