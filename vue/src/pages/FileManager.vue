@@ -19,13 +19,14 @@
           <ejs-filemanager
             ref="fileManager"
             id="overview_file"
-            :path="currentPath"
+            :path="initialPath"
             :fileSystemData="fileData"
             :view="view"
             :toolbarSettings="toolbarSettings"
             :contextMenuSettings="contextMenuSettings"
             :uploadSettings="uploadSettings"
             :navigationPaneSettings="navigationPaneSettings"
+            @fileOpen="onDirOpened"
             @delete="onDelete"
             @rename="onRename"
             @folderCreate="onFolderCreate"
@@ -50,11 +51,13 @@ export default {
   },
   data() {
     return {
-        currentPath: "",
+        initialPath: "/home",
+        currentPath: "/home",
         fileData: [],
+        alreadyLoadedFiles: [],
         currentSystem: [],
         toolbarSettings: {
-            items: ["NewFolder", "Upload", "SortBy", "Cut", "Copy", "Paste", "Delete", "Refresh", "Download", "Rename", "Selection", "View", "Details"],
+            items: ["NewFolder", "Upload", "Cut", "Copy", "Paste", "Delete", "Refresh", "Download", "Rename", "Selection", "Details"],
         },
         contextMenuSettings: {
             file: ["Cut", "Copy", "|", "Delete", "Download", "Rename", "|", "Details"],
@@ -96,31 +99,55 @@ export default {
     async mounted() {
         this.currentSystem = this.$store.getters.currentSystem;
         
-        await this.loadFileStructure();
+        await this.loadFileStructure(this.currentPath);
     },
     methods: {
+        async onDirOpened(args){
+          console.log(args);
+
+          if (args.fileDetails.isFile){
+            return;
+          }
+
+          const newPath = args.fileDetails.name;
+
+          let pathParts = this.currentPath.split('/').filter(Boolean);
+          let containsSubstring = pathParts.some(part => part === newPath);
+
+          console.log(pathParts);
+
+          if (!containsSubstring)
+          {
+            console.log("does not contains substricng");
+            this.currentPath += "/"+newPath;
+            if (!this.alreadyLoadedFiles.includes(this.currentPath))
+            {
+              console.log("not includes path");
+              this.alreadyLoadedFiles.push(this.currentPath);
+              await this.loadSubDir(this.currentPath, args.fileDetails.id);
+            }
+          }
+          else {
+            console.log("contains substricng");
+            let newPathIndex = this.currentPath.indexOf(newPath);
+            this.currentPath = this.currentPath.substring(0, newPathIndex + newPath.length);
+          }
+
+
+          console.log(this.currentPath);
+        },
         async onBeforeSendRequest(args){
           const rawFile = args.fileInfo.rawFile;
-          console.log(args);
+          
           if (rawFile instanceof File) {
             const base64File = await this.convertFileToBase64(rawFile);
 
             const chunkSize = 32768 - new TextEncoder().encode(`printf "%s" "" | base64 -d >> ${args.fileInfo.name}`).length;
             const totalChunks = Math.ceil(new TextEncoder().encode(base64File).length / chunkSize);
             
-
-            console.log("chunk size");
-            console.log(chunkSize);
-            console.log("totalChunks");
-            console.log(totalChunks);
-            console.log("totalsize");
-            console.log(new TextEncoder().encode(base64File).length);
-
             for (let i = 0; i < totalChunks; i++) 
             {
               const chunk = base64File.slice(i * chunkSize, (i + 1) * chunkSize);
-              console.log("Base64 chunk", chunk.slice(0, 100));
-              
               await apiService.execCommand(`printf "%s" "${chunk}" | base64 -d >> ${args.fileInfo.name}`, this.currentSystem);
             }
           }
@@ -142,31 +169,20 @@ export default {
         async onBeforeDownload(args){
             args.cancel = true;
             
-            const file = args.data.names[0];
-            if (!file) return;
+            const fileName = args.data.names[0];
+            if (!fileName) return;
 
-            try {//single file download only
-                const response = await apiService.execCommand(`base64 ${args.data.names[0]}`, this.currentSystem);
+            const response = await apiService.execCommand(`base64 ${this.currentPath}/${fileName}`, this.currentSystem);
 
-                const binaryData = atob(response.output);
+            const byteArray = Uint8Array.from(atob(response.output), c => c.charCodeAt(0));
+            const blob = new Blob([byteArray]);
 
-                const byteArray = new Uint8Array(binaryData.length);
-                for (let i = 0; i < binaryData.length; i++) {
-                    byteArray[i] = binaryData.charCodeAt(i);
-                }
-
-                const blob = new Blob([byteArray], {});
-                const url = URL.createObjectURL(blob);
-
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = args.data.names[0];
-                link.click(); 
-
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error("Download failed:", error);
-            }
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
 
         },
         async onDelete(args) {
@@ -183,8 +199,8 @@ export default {
             await apiService.execCommand(`mkdir ${args.folderName}`, this.currentSystem);
         },
         async onFilesRefresh(args) {
-            console.logs("refresh");
-            await this.loadFileStructure();
+            //console.logs("refresh");
+            //await this.loadFileStructure();
         },
         async onBeforeMove(args) {
             if (args.isCopy === true)
@@ -200,24 +216,51 @@ export default {
                 await apiService.execCommand(`mv ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
             }
         },
-        async loadFileStructure() {
+        async loadSubDir(path, parentId){
+          const parts = this.splitPath(path);
+          
+          
+          const response = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ${parts.parent}/${parts.name}`, this.currentSystem);
+          this.parseLsOutput(response.output, parentId);
+        },
+        async loadFileStructure(path) {
+            this.alreadyLoadedFiles.push(path);
             try {
                 this.fileData = [];
-                const pwd = await apiService.execCommand('pwd', this.currentSystem);
-                const lastPart = pwd.output.substring(pwd.output.lastIndexOf('/') + 1);
 
-                const parent = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ../ | grep ${lastPart}}`, this.currentSystem);
-                
-                this.currentPath = "parent.output";
-                this.parseLsOutput(parent.output, null);
+                const parts = this.splitPath(path);
+                const response = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ${parts.parent} | grep ${parts.name}`, this.currentSystem);
+                const parent = response.output;
+
+                console.log(parts);
+
+                this.parseLsOutput(parent, null);
                 const parentId = this.fileData[0].id;
                 
                 //add children
-                const response = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ${pwd.output}}`, this.currentSystem);
-                this.parseLsOutput(response.output, parentId);
+                const response2 = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ${parts.parent}/${parts.name}`, this.currentSystem);
+                this.parseLsOutput(response2.output, parentId);
             } catch (error) {
                 console.error("Error loading file structure:", error);
             }
+        },
+        splitPath(path) {
+          if (path.length > 1) {
+            path = path.replace(/\/+$/, '');
+          }
+
+          const parts = path.split('/');
+          let parent, name;
+
+          if (parts.length <= 2) {
+            parent = '/';
+            name = parts[1] || '';
+          } else {
+            name = parts.pop();
+            parent = parts.join('/') || '/';
+          }
+
+          return { parent, name };
         },
         parseLsOutput(lsOutput, parentId) {
             const lines = lsOutput.trim().split('\n');
@@ -245,12 +288,11 @@ export default {
                     name,
                     parentId: parentId,
                     permission: {
-                        read: permissions.charAt(1) === 'r',
-                        write: permissions.charAt(2) === 'w',
-                        delete: permissions.charAt(3) === 'x',
+                        read: true,
+                        write: true,
+                        delete: true,
                         download: true,
                         copy: true,
-                        read: true,
                         upload: true,
                         writeContents: true
                     },
@@ -258,9 +300,12 @@ export default {
                     type: isFile ? '.' + name.split('.').pop() : '', 
                 };
                 
-                this.fileData.push(fileObj); 
+                if (fileObj.name != null){
+                  this.fileData.push(fileObj); 
+                }
 
             });
+            console.log(this.fileData);
             this.fileData = [...this.fileData];
         }
     },
