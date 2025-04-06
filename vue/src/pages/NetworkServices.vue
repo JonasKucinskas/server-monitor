@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <!-- Header Card -->
+
     <div class="col-md-12">
       <card type="dashboard-header" class="p-2">
         <div class="d-flex justify-content-between align-items-center px-2">
@@ -216,7 +216,6 @@
       </form>
     </Modal>
 
-    <!-- Delete Confirmation Modal -->
     <Modal
       :show="showDeleteConfirmationModal"
       @close="closeDeleteConfirmation"
@@ -432,7 +431,6 @@ export default {
           this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
           this.selectedService = this.networkServices.find(s => s.id === this.selectedService.id) || this.networkServices[0];
 
-          console.log(this.formData);
           //in case interval changed.
           this.stopAutoUpdate();
           this.startAutoUpdate();

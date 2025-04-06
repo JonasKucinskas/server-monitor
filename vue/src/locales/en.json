@@ -53,5 +53,9 @@
   "terminal":{
     "header": "Terminal",
     "footer": "Execute non real-time commands."
+  },
+  "filemanager":{
+    "header": "File Manager",
+    "footer": "Manage System Files"
   }
 }

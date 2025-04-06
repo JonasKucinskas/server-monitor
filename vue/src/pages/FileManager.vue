@@ -4,8 +4,8 @@
       <card type="dashboard-header" class="p-2">
         <div class="d-flex justify-content-between align-items-center px-2">
           <div class="col-10">
-            <h2 class="card-title mb-1">{{ $t("services.header") }}</h2>
-            <p class="mb-0">{{ $t("services.footer") }}</p>
+            <h2 class="card-title mb-1">{{ $t("filemanager.header") }}</h2>
+            <p class="mb-0">{{ $t("filemanager.footer") }}</p>
           </div>
         </div>
       </card>
@@ -30,7 +30,6 @@
             @delete="onDelete"
             @rename="onRename"
             @folderCreate="onFolderCreate"
-            @refreshFiles="onFilesRefresh"
             @beforeDownload="onBeforeDownload"
             @beforeMove="onBeforeMove"
             @uploadListCreate="onBeforeSendRequest"
@@ -57,11 +56,11 @@ export default {
         alreadyLoadedFiles: [],
         currentSystem: [],
         toolbarSettings: {
-            items: ["NewFolder", "Upload", "Cut", "Copy", "Paste", "Delete", "Refresh", "Download", "Rename", "Selection", "Details"],
+            items: ["NewFolder", "Upload", "Cut", "Copy", "Paste", "Delete", "Download", "Rename", "Selection", "Details"],
         },
         contextMenuSettings: {
             file: ["Cut", "Copy", "|", "Delete", "Download", "Rename", "|", "Details"],
-            layout: ["SortBy", "View", "Refresh", "|", "Paste", "|", "NewFolder", "|", "Uplpad", "|", "Details", "|", "SelectAll"],
+            layout: ["SortBy", "View", "|", "Paste", "|", "NewFolder", "|", "Uplpad", "|", "Details", "|", "SelectAll"],
             visible: true,
         },
         view: "Details",
@@ -103,7 +102,6 @@ export default {
     },
     methods: {
         async onDirOpened(args){
-          console.log(args);
 
           if (args.fileDetails.isFile){
             return;
@@ -114,27 +112,20 @@ export default {
           let pathParts = this.currentPath.split('/').filter(Boolean);
           let containsSubstring = pathParts.some(part => part === newPath);
 
-          console.log(pathParts);
 
           if (!containsSubstring)
           {
-            console.log("does not contains substricng");
             this.currentPath += "/"+newPath;
             if (!this.alreadyLoadedFiles.includes(this.currentPath))
             {
-              console.log("not includes path");
               this.alreadyLoadedFiles.push(this.currentPath);
               await this.loadSubDir(this.currentPath, args.fileDetails.id);
             }
           }
           else {
-            console.log("contains substricng");
             let newPathIndex = this.currentPath.indexOf(newPath);
             this.currentPath = this.currentPath.substring(0, newPathIndex + newPath.length);
           }
-
-
-          console.log(this.currentPath);
         },
         async onBeforeSendRequest(args){
           const rawFile = args.fileInfo.rawFile;
@@ -142,14 +133,52 @@ export default {
           if (rawFile instanceof File) {
             const base64File = await this.convertFileToBase64(rawFile);
 
-            const chunkSize = 32768 - new TextEncoder().encode(`printf "%s" "" | base64 -d >> ${args.fileInfo.name}`).length;
+            const fileName = args.fileInfo.name;
+
+            const chunkSize = 32768 - new TextEncoder().encode(`printf "%s" "" | base64 -d >> ${this.currentPath}/${fileName}`).length;
             const totalChunks = Math.ceil(new TextEncoder().encode(base64File).length / chunkSize);
             
+            await apiService.execCommand(`rm ${this.currentPath}/${fileName}`, this.currentSystem);
+
             for (let i = 0; i < totalChunks; i++) 
             {
               const chunk = base64File.slice(i * chunkSize, (i + 1) * chunkSize);
-              await apiService.execCommand(`printf "%s" "${chunk}" | base64 -d >> ${args.fileInfo.name}`, this.currentSystem);
+              await apiService.execCommand(`printf "%s" "${chunk}" | base64 -d >> ${this.currentPath}/${fileName}`, this.currentSystem);
             }
+
+            const isFile = true; 
+            const name = fileName; 
+            const size = args.fileInfo.size; 
+            const dateModified = Date.now();
+            const isFolder = false;
+
+            const fileObj = {
+                dateCreated: dateModified, 
+                dateModified,
+                filterPath: '/' + args.fileInfo.name, 
+                hasChild: isFolder,
+                id: args.fileInfo.name, 
+                imageUrl: '',
+                isFile,
+                name,
+                parentId: this.currentPath.split("/").pop(),
+                permission: {
+                    read: true,
+                    write: true,
+                    delete: true,
+                    download: true,
+                    copy: true,
+                    upload: true,
+                    writeContents: true
+                },
+                size,
+                type: isFile ? '.' + name.split('.').pop() : '', 
+            };
+            
+            this.fileData.push(fileObj); 
+            this.fileData = [...this.fileData];
+            //this.$refs.fileManager.refreshFiles();
+            console.log(this.fileData);
           }
           else{
             console.log("not File format");
@@ -188,32 +217,28 @@ export default {
         async onDelete(args) {
             if (args.itemData[0].isFile === false)
             {
-                await apiService.execCommand(`rm -rf ${args.itemData[0].name}`, this.currentSystem);
+                await apiService.execCommand(`rm -rf ${this.currentPath}/${args.itemData[0].name}`, this.currentSystem);
             }
-            else await apiService.execCommand(`rm ${args.itemData[0].name}`, this.currentSystem);
+            else await apiService.execCommand(`rm ${this.currentPath}/${args.itemData[0].name}`, this.currentSystem);
         },
         async onRename(args) {
-            await apiService.execCommand(`mv ${args.itemData[0].id} ${args.newName}`, this.currentSystem);
+            await apiService.execCommand(`mv ${this.currentPath}/${args.itemData[0].id} ${this.currentPath}/${args.newName}`, this.currentSystem);
         },
         async onFolderCreate(args) {
-            await apiService.execCommand(`mkdir ${args.folderName}`, this.currentSystem);
-        },
-        async onFilesRefresh(args) {
-            //console.logs("refresh");
-            //await this.loadFileStructure();
+            await apiService.execCommand(`mkdir ${this.currentPath}/${args.folderName}`, this.currentSystem);
         },
         async onBeforeMove(args) {
             if (args.isCopy === true)
             {
                 if (args.itemData[0].isFile)
                 {
-                    await apiService.execCommand(`cp ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
+                    await apiService.execCommand(`cp ${this.currentPath}/${args.itemData[0].name} ${this.currentPath}/${args.targetData.name}`, this.currentSystem);
                 }
-                else await apiService.execCommand(`cp -r ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
+                else await apiService.execCommand(`cp -r ${this.currentPath}/${args.itemData[0].name} ${this.currentPath}/${args.targetData.name}`, this.currentSystem);
             }
             else
             {
-                await apiService.execCommand(`mv ${args.itemData[0].name} ${args.targetData.name}`, this.currentSystem);
+                await apiService.execCommand(`mv ${this.currentPath}/${args.itemData[0].name} ${this.currentPath}/${args.targetData.name}`, this.currentSystem);
             }
         },
         async loadSubDir(path, parentId){
@@ -232,7 +257,7 @@ export default {
                 const response = await apiService.execCommand(`ls -l --time-style=+%Y-%m-%dT%H:%M:%S ${parts.parent} | grep ${parts.name}`, this.currentSystem);
                 const parent = response.output;
 
-                console.log(parts);
+                
 
                 this.parseLsOutput(parent, null);
                 const parentId = this.fileData[0].id;
@@ -305,7 +330,7 @@ export default {
                 }
 
             });
-            console.log(this.fileData);
+            
             this.fileData = [...this.fileData];
         }
     },
