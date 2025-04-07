@@ -16,7 +16,7 @@ public class SystemsController : ControllerBase
     {
         try
         {
-            var systems = await _dbService.FetchAllSystems(userId);
+            var systems = await _dbService.FetchAllSystemsByUserId(userId);
 
             var json = System.Text.Json.JsonSerializer.Serialize(systems);
             if (systems == null || systems.Count == 0)
@@ -27,7 +27,7 @@ public class SystemsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, $"server error: {ex.Message}");
         }
     }
 
@@ -47,7 +47,33 @@ public class SystemsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, $"server error: {ex.Message}");
+        }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<SystemData>> CreateSystem([FromBody] SystemData newSystem)
+    {
+        try
+        {
+            if (newSystem == null)
+            {
+                return BadRequest("System data is required.");
+            }
+
+            var existingSystem = await _dbService.FetchSystemByName(newSystem.name);
+            Console.WriteLine(existingSystem.name);
+            if (existingSystem.name != null)
+            {
+                return Conflict("A system already exist.");
+            }
+
+            await _dbService.InsertSystemAsync(newSystem);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"server error: {ex.Message}");
         }
     }
 }

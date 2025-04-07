@@ -9,25 +9,18 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers(); 
 
-var connectionString = builder.Configuration.GetConnectionString("TimescaleDb");
-builder.Services.AddScoped<Database>(provider => new Database(connectionString));
-builder.Services.AddHostedService<PingerService>();
-
-var app = builder.Build(); 
-
-app.UseCors("AllowAll");
-
 if (!File.Exists("privateKey.pem") || !File.Exists("publicKey.pub"))
 {
     KeyGen.GenerateKeyPair(); 
 }
 
-string agentIp = "localhost"; 
-int agentPort = 12345; 
-string username = "monitor"; 
-int intervalInSeconds = 60; 
+var connectionString = builder.Configuration.GetConnectionString("TimescaleDb");
+builder.Services.AddScoped<Database>(provider => new Database(connectionString));
+builder.Services.AddHostedService<PingerService>();
+builder.Services.AddHostedService<SystemInitService>();
 
-await MultiSshConnection.Instance.StartSendingRequests(agentIp, agentPort, username, intervalInSeconds);
+var app = builder.Build(); 
 
+app.UseCors("AllowAll");
 app.MapControllers();
 app.Run("http://localhost:9000");

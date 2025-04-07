@@ -42,7 +42,7 @@ public class NetworkServicesController : ControllerBase
                 return BadRequest("Service data is null.");
             }
 
-            await _dbService.InsertNetworkService(newService);
+            await _dbService.InsertNetworkServiceAsync(newService);
             return Ok();
         }
         catch (Exception ex)

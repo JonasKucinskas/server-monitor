@@ -88,7 +88,7 @@ public class SshConnection
         }
         else
         {
-            Console.WriteLine("Keys dont match, not authenticting");
+            Console.WriteLine("Keys dont match, not authenticating");
             e.Result = false;
         }
     }

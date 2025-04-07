@@ -13,7 +13,7 @@ ensure_trailing_slash() {
 }
 
 # Define default values
-PORT=45876
+PORT=13245
 UNINSTALL=false
 GITHUB_PROXY_URL=""
 KEY=""

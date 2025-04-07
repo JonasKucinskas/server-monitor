@@ -59,9 +59,12 @@
         </template>
 
         <template v-slot:footer>
-          <button class="btn btn-secondary" @click="closeModal">Cancel</button>
-          <button class="btn btn-primary" @click="handleSubmit">Submit</button>
+            <button class="btn btn-secondary" @click="closeModal">Cancel</button>
+            <button class="btn btn-primary" @click="copyCommand">Copy Linux Command</button>
+            <button class="btn btn-primary" @click="handleSubmit">Submit</button>
         </template>
+
+
 
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
@@ -87,8 +90,6 @@
             <input v-model="formData.publicKey" type="text" class="form-control" id="publicKey" :class="{'is-invalid': formErrors.publicKey}" required />
             <div v-if="formErrors.publicKey" class="invalid-feedback">{{ formErrors.publicKey }}</div>
           </div>
-
-
         </form>
       </Modal>
       
@@ -101,6 +102,7 @@
 import { BaseTable } from "@/components";
 import apiService from "@/services/api"; 
 import Modal from "@/components/Modal";
+import NotificationTemplate from "./Notifications/NotificationTemplate";
 
 export default {
   components: {
@@ -109,6 +111,46 @@ export default {
   },
   
   methods: {
+    async copyCommand(){
+      this.formErrors = {};
+
+      let isValid = true;
+      if (!this.formData.name) {
+        this.formErrors.name = 'Name is required.';
+        isValid = false;
+      }
+      if (!this.formData.ip) {
+        this.formErrors.ip = 'IP address is required.';
+        isValid = false;
+      }
+      if (!this.formData.port) {
+        this.formErrors.port = 'Port is required.';
+        isValid = false;
+      }
+      if (!this.formData.publicKey) {
+        this.formErrors.publicKey = 'Key is required.';
+        isValid = false;
+      }
+      if (isValid) {
+
+        const command = `./install-agent.sh -p ${this.formData.port} -k "${this.formData.publicKey}"`; 
+        await navigator.clipboard.writeText(command);
+        this.$notify({
+          component: NotificationTemplate,
+          message: "Command copied to clipboard!",
+          icon: "ticon",
+          icon: "tim-icons icon-bell-55",
+          horizontalAlign: 'center',
+          verticalAlign: 'top',
+          type: "danger",
+          timeout: 3000,
+        });
+      }
+      
+      
+      
+      
+    },
     async handleSubmit() {
       this.formErrors = {};
 
@@ -117,7 +159,7 @@ export default {
         this.formErrors.name = 'Name is required.';
         isValid = false;
       }
-      if (!this.systemInfo || !this.systemInfo.ip) {
+      if (!this.formData.ip) {
         this.formErrors.ip = 'IP address is required.';
         isValid = false;
       }
@@ -125,32 +167,24 @@ export default {
         this.formErrors.port = 'Port is required.';
         isValid = false;
       }
+      if (!this.formData.publicKey) {
+        this.formErrors.publicKey = 'Key is required.';
+        isValid = false;
+      }
       if (isValid) {
 
-        //if (this.isAddingNetworkService || this.isCloningNetworkService)
-        //{
-        //  await apiService.insertNetworkService(this.formData, this.systemInfo.name);
-        //  this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
-        //  
-        //  this.stopAutoUpdate();
-        //  
-        //  if (this.selectedService == null)
-        //  {
-        //    this.selectedService = this.networkServices[0];
-        //    this.startAutoUpdate();
-        //  }
-//
-        //  this.updateRangeValues(this.dateRange);
-        //  this.startAutoUpdate();
-        //}
-        //else if (this.isEditingNetworkService)
-        //{
-        //  await apiService.updateNetworkService(this.selectedService, this.formData);
-        //  this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
-        //  this.selectedService = this.networkServices.find(s => s.id === this.selectedService.id) || this.networkServices[0];
-//
-        //}
-        //this.closeModal();
+        if (this.isAddingSystem || this.isCloningSystem)
+        {
+          await apiService.postSystem(this.formData);
+          //this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
+        }
+        else if (this.isEditingSystem)
+        {
+          //await apiService.updateNetworkService(this.selectedService, this.formData);
+          //this.networkServices = await apiService.getNetworkServices(this.systemInfo.name);
+          //this.selectedService = this.networkServices.find(s => s.id === this.selectedService.id) || this.networkServices[0];
+        }
+        this.closeModal();
       }
     },
     closeModal() {
@@ -160,6 +194,7 @@ export default {
       this.isAddingSystem = true;
       this.showModal = true;
       this.formData = [];
+      this.formData.publicKey = this.publicKey;
     },
     goToDashboard(system) {
       this.$router.push({ name: 'dashboard', params: { systemName: system.name } });
@@ -174,15 +209,20 @@ export default {
     }
   },
   async mounted() {
-    try {
-      this.apiData = await apiService.getSystems(0);
-    } catch (error) {
-      console.error("API Error:", error);
-    } 
+
+    const response = await apiService.getPublicKey();
+
+    this.publicKey = response;
+
+    this.apiData = await apiService.getSystems(0);
     this.formatApiData();
   },
   data() {
     return {
+      publicKey: "",
+      isAddingSystem: false,
+      isCloningSystem: false,
+      isEditingSystem: false,
       showModal: false,
       formErrors: {},
       formData: {
@@ -197,4 +237,9 @@ export default {
   }
 };
 </script>
-<style></style>
+<style>
+
+.modal .form-control {
+  color: black !important;
+}
+</style>

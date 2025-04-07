@@ -174,6 +174,38 @@ export default {
       }
     );
   },
+  getPublicKey(){
+    return apiClient.get("/key", {
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  postSystem(system) {
+
+    const cleanSystem = {
+      ip: system.ip,
+      port: system.port,
+      name: system.name,
+      ownerId: 0 
+    };
+
+    console.log(system);
+    console.log(cleanSystem);
+
+    return apiClient.post("/systems", cleanSystem)
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   getSystems(userId) {
     return apiClient.get("/systems/all", {
       params: { userId } 

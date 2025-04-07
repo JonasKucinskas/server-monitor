@@ -5,17 +5,17 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-public sealed class MultiSshConnection
+public sealed class SshConnection
 {
-    private static readonly Lazy<MultiSshConnection> _instance = new Lazy<MultiSshConnection>(() => new MultiSshConnection());
-    public static MultiSshConnection Instance => _instance.Value;
+    private static readonly Lazy<SshConnection> _instance = new Lazy<SshConnection>(() => new SshConnection());
+    public static SshConnection Instance => _instance.Value;
 
     private readonly ConcurrentDictionary<string, SshClient> _sshClients = new ConcurrentDictionary<string, SshClient>();
     private readonly ConcurrentDictionary<string, Timer> _timers = new ConcurrentDictionary<string, Timer>();
     private readonly ConcurrentDictionary<string, int> _currentIntervals = new ConcurrentDictionary<string, int>();
     private readonly DatabaseQueue<DataPackage> _databaseQueue;
 
-    private MultiSshConnection()
+    private SshConnection()
     {
         _databaseQueue = new DatabaseQueue<DataPackage>(async (data) =>
         {

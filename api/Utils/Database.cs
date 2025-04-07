@@ -223,7 +223,7 @@ public class Database
         return ping;
     }
 
-    public async Task<List<SystemData>> FetchAllSystems(int userId)
+    public async Task<List<SystemData>> FetchAllSystemsByUserId(int userId)
     {
         await OpenConnAsync();
         var systems = new List<SystemData>();
@@ -267,6 +267,49 @@ public class Database
         return systems;
     }
 
+    public async Task<List<SystemData>> FetchAllSystems()
+    {
+        await OpenConnAsync();
+        var systems = new List<SystemData>();
+
+        string serverMetricsQuery = @"
+            SELECT * FROM servers;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var systemData = new SystemData
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("server_id")),
+                    ip = reader.GetString(reader.GetOrdinal("server_ip")),
+                    port = reader.GetInt32(reader.GetOrdinal("server_port")),
+                    name = reader.GetString(reader.GetOrdinal("system_name")),
+                    ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id")),
+                    creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed")),
+                };
+
+                systems.Add(systemData);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return systems;
+    }
+
+
     public async Task<SystemData> FetchSystemByName(string systemName)
     {
         await OpenConnAsync();
@@ -295,7 +338,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+            Console.WriteLine($"Error fetching system by name: {ex.Message}");
         }
         finally
         {
@@ -616,6 +659,14 @@ public class Database
         return networkMetricsList;
     }
 
+    public async Task InsertSystemAsync(SystemData system)
+    {
+        await OpenConnAsync();
+        await system.InsertToDatabase(conn);
+        await CloseConnAsync();
+        await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", 60);
+    }
+
     public async Task InsertServerMetricsAsync(DataPackage metrics)
     {
         await OpenConnAsync();
@@ -623,7 +674,7 @@ public class Database
         await CloseConnAsync();
     }
 
-    public async Task InsertNetworkService(NetworkService service)
+    public async Task InsertNetworkServiceAsync(NetworkService service)
     {
         await OpenConnAsync();
         await service.InsertToDatabase(conn);

@@ -21,7 +21,7 @@ public class CommandController : ControllerBase
             return BadRequest(new { message = "System information is required" });
         }
 
-        string cmdOutput = MultiSshConnection.Instance.RunCmd(request.SystemInfo.ip, request.SystemInfo.port, request.Command);
+        string cmdOutput = SshConnection.Instance.RunCmd(request.SystemInfo.ip, request.SystemInfo.port, request.Command);
         Console.WriteLine($"Function executed with command: {request.Command}. output: {cmdOutput}");
         return Ok(new { output = cmdOutput });
     }
