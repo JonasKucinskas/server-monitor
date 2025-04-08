@@ -248,6 +248,7 @@ public class Database
                     port = reader.GetInt32(reader.GetOrdinal("server_port")),
                     name = reader.GetString(reader.GetOrdinal("system_name")),
                     ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id")),
+                    updateInterval = reader.GetInt32(reader.GetOrdinal("interval")),
                     creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed")),
                 };
 
@@ -290,6 +291,7 @@ public class Database
                     port = reader.GetInt32(reader.GetOrdinal("server_port")),
                     name = reader.GetString(reader.GetOrdinal("system_name")),
                     ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id")),
+                    updateInterval = reader.GetInt32(reader.GetOrdinal("interval")),
                     creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed")),
                 };
 
@@ -333,6 +335,7 @@ public class Database
                 systemData.port = reader.GetInt32(reader.GetOrdinal("server_port"));
                 systemData.name = reader.GetString(reader.GetOrdinal("system_name"));
                 systemData.ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id"));
+                systemData.updateInterval = reader.GetInt32(reader.GetOrdinal("interval"));
                 systemData.creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed"));
             }
         }
@@ -459,6 +462,106 @@ public class Database
         }
 
         return serverMetricsList;
+    }
+
+    public async Task<ServerMetrics> FetchLatestMetrics(string systemName)
+    {
+        await OpenConnAsync();
+
+        string serverIp = "";
+
+        string getIpQuery = @"
+            SELECT server_ip FROM servers WHERE system_name = @systemName;
+        ";
+        await using var cmd = new NpgsqlCommand(getIpQuery, conn);
+        cmd.Parameters.AddWithValue("systemName", systemName);
+
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                serverIp = reader.GetString(reader.GetOrdinal("server_ip"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server ip: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+        }
+
+        if (serverIp == "")
+        {
+            Console.WriteLine("faiuled to get serveriip");
+            return null;
+        }
+
+        string latestServerMetricsQuery = @"
+            SELECT time, server_id, cpu_name, cpu_freq, battery_name, battery_capacity, battery_status,
+                disk_total_space, disk_used_space, disk_free_space, ram_mem_total, ram_mem_free, ram_mem_used,
+                ram_mem_available, ram_buffers, ram_cached, ram_swap_total, ram_swap_free, ram_swap_used
+            FROM server_metrics
+            WHERE server_id = @serverId
+            LIMIT 1;
+        ";
+
+
+        await using var cmd2 = new NpgsqlCommand(latestServerMetricsQuery, conn);
+        cmd2.Parameters.AddWithValue("serverId", serverIp);
+
+        await using var reader2 = await cmd2.ExecuteReaderAsync();
+
+        var serverMetrics = new ServerMetrics();
+
+        try
+        {
+            while (await reader2.ReadAsync())
+            {
+                serverMetrics.Time = reader2.GetDateTime(reader2.GetOrdinal("time"));
+                serverMetrics.ServerId = reader2.GetString(reader2.GetOrdinal("server_id"));
+                serverMetrics.CpuName = reader2.GetString(reader2.GetOrdinal("cpu_name"));
+                serverMetrics.CpuFreq = reader2.GetDouble(reader2.GetOrdinal("cpu_freq"));
+                serverMetrics.BatteryName = reader2.GetString(reader2.GetOrdinal("battery_name"));
+                serverMetrics.BatteryCapacity = reader2.GetInt32(reader2.GetOrdinal("battery_capacity"));
+                serverMetrics.BatteryStatus = reader2.GetString(reader2.GetOrdinal("battery_status"));
+                serverMetrics.DiskTotalSpace = reader2.GetInt64(reader2.GetOrdinal("disk_total_space"));
+                serverMetrics.DiskUsedSpace = reader2.GetInt64(reader2.GetOrdinal("disk_used_space"));
+                serverMetrics.DiskFreeSpace = reader2.GetInt64(reader2.GetOrdinal("disk_free_space"));
+                serverMetrics.RamMemTotal = reader2.GetInt64(reader2.GetOrdinal("ram_mem_total"));
+                serverMetrics.RamMemFree = reader2.GetInt64(reader2.GetOrdinal("ram_mem_free"));
+                serverMetrics.RamMemUsed = reader2.GetInt64(reader2.GetOrdinal("ram_mem_used"));
+                serverMetrics.RamMemAvailable = reader2.GetInt64(reader2.GetOrdinal("ram_mem_available"));
+                serverMetrics.RamBuffers = reader2.GetInt64(reader2.GetOrdinal("ram_buffers"));
+                serverMetrics.RamCached = reader2.GetInt64(reader2.GetOrdinal("ram_cached"));
+                serverMetrics.RamSwapTotal = reader2.GetInt64(reader2.GetOrdinal("ram_swap_total"));
+                serverMetrics.RamSwapFree = reader2.GetInt64(reader2.GetOrdinal("ram_swap_free"));
+                serverMetrics.RamSwapUsed = reader2.GetInt64(reader2.GetOrdinal("ram_swap_used"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching server metrics with details: {ex.Message}");
+        }
+        finally
+        {
+            await reader2.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        var sensorList = await FetchSensorDataAsync(serverIp, serverMetrics.Time);
+        serverMetrics.SensorList = sensorList;
+        var cpuCoresList = await FetchCpuCoreDataAsync(serverIp, serverMetrics.Time);
+        serverMetrics.CpuCores = cpuCoresList;
+        var diskPartitionsList = await FetchDiskPartitionDataAsync(serverIp, serverMetrics.Time);
+        serverMetrics.DiskPartitions = diskPartitionsList;
+        var networkMetricsList = await FetchNetworkMetricsAsync(serverIp, serverMetrics.Time);
+        serverMetrics.NetworkMetrics = networkMetricsList;
+        
+        return serverMetrics;
     }
 
     private async Task<List<Sensor>> FetchSensorDataAsync(string serverIp, DateTime time)
@@ -664,7 +767,7 @@ public class Database
         await OpenConnAsync();
         await system.InsertToDatabase(conn);
         await CloseConnAsync();
-        await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", 60);
+        await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", system.updateInterval);
     }
 
     public async Task InsertServerMetricsAsync(DataPackage metrics)

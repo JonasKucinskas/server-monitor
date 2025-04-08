@@ -661,25 +661,6 @@ export default {
 </script>
 
 <style>
-.pulsating-icon {
-  animation: pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 .clickable-panel {
   background-color: #1e1e2e;
   border: 2px solid rgb(46, 46, 66);

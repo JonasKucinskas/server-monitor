@@ -7,19 +7,21 @@ public class SystemData
     public int port { get; set; }
     public string name { get; set; }
     public int ownerId { get; set; }
+    public int updateInterval { get; set; }
     public DateTime creationDate { get; set; }
 
 
     public async Task InsertToDatabase(NpgsqlConnection conn)
     {
         await using var cmd = new NpgsqlCommand(@"
-            INSERT INTO servers (server_ip, server_port, system_name, owner_user_id)
-            VALUES (@ip, @port, @name, @owner_id);
+            INSERT INTO servers (server_ip, server_port, system_name, owner_user_id, interval)
+            VALUES (@ip, @port, @name, @owner_id, @interval);
         ", conn);
 
         cmd.Parameters.AddWithValue("ip", ip);
         cmd.Parameters.AddWithValue("port", port);
         cmd.Parameters.AddWithValue("name", name);
+        cmd.Parameters.AddWithValue("interval", updateInterval);
         cmd.Parameters.AddWithValue("owner_id", ownerId);
 
         await cmd.ExecuteNonQueryAsync();

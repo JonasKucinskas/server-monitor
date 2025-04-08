@@ -20,7 +20,7 @@ public class SystemInitService : BackgroundService
                     system.ip,
                     system.port,
                     "monitor",
-                    5),
+                    system.updateInterval),
                 stoppingToken);
         }
     }

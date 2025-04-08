@@ -22,9 +22,6 @@ public class MetricsController : ControllerBase
             DateTime actualStartDate = startDate ?? dayago;
             DateTime actualEndDate = endDate ?? now;
 
-            Console.WriteLine(actualStartDate);
-            Console.WriteLine(actualEndDate);
-
             var metrics = await _dbService.FetchServerMetrics(systemName, actualStartDate, actualEndDate);
 
             var json = System.Text.Json.JsonSerializer.Serialize(metrics);
@@ -39,6 +36,25 @@ public class MetricsController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+
+    [HttpGet]
+    [Route("latest")]
+    public async Task<ActionResult<NetworkMetric>> GetLatestMetric([FromQuery] string systemName)
+    {
+        try
+        {
+            var metrics = await _dbService.FetchLatestMetrics(systemName);
+
+            var json = System.Text.Json.JsonSerializer.Serialize(metrics);
+            if (metrics == null)
+            {
+                return NotFound("No metrics found.");
+            }
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 }
-
-

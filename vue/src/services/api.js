@@ -148,6 +148,20 @@ export default {
       throw error; 
     });
   },
+  getLatestMetrics(systemName) {
+    return apiClient.get("/metrics/latest", {
+      params: { 
+        systemName,
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   execCommand(command, system) {
 
     const cleanSystem = {
@@ -191,11 +205,9 @@ export default {
       ip: system.ip,
       port: system.port,
       name: system.name,
+      updateInterval: system.updateInterval,
       ownerId: 0 
     };
-
-    console.log(system);
-    console.log(cleanSystem);
 
     return apiClient.post("/systems", cleanSystem)
     .then(response => {
