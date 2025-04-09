@@ -506,6 +506,7 @@ public class Database
                 ram_mem_available, ram_buffers, ram_cached, ram_swap_total, ram_swap_free, ram_swap_used
             FROM server_metrics
             WHERE server_id = @serverId
+            ORDER BY time DESC
             LIMIT 1;
         ";
 
@@ -768,6 +769,36 @@ public class Database
         await system.InsertToDatabase(conn);
         await CloseConnAsync();
         await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", system.updateInterval);
+    }
+
+    public async Task DeleteSystemAsync(int id)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM servers WHERE server_id = @Id;", conn);
+
+        cmd.Parameters.AddWithValue("Id", id);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
+    public async Task UpdateSystem(SystemData system)
+    {
+        await OpenConnAsync();
+        
+        await using var cmd = new NpgsqlCommand(@"UPDATE servers 
+        SET system_name = @name, server_ip = @ip, server_port = @port, interval = @interval WHERE server_id = @id;", conn);
+
+        cmd.Parameters.AddWithValue("name", system.name);
+        cmd.Parameters.AddWithValue("ip", system.ip);
+        cmd.Parameters.AddWithValue("port", system.port);
+        cmd.Parameters.AddWithValue("interval", system.updateInterval);
+        cmd.Parameters.AddWithValue("id", system.id);
+        
+        await cmd.ExecuteNonQueryAsync();
+        await CloseConnAsync();
     }
 
     public async Task InsertServerMetricsAsync(DataPackage metrics)

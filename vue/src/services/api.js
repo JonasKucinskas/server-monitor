@@ -6,6 +6,42 @@ const apiClient = axios.create({
 });
 
 export default {
+  deleteSystem(id)
+  {
+    return apiClient.delete("/systems", {
+      params: { 
+        id,
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  updateSystem(formData, system)
+  {
+    const cleanSystem = {
+      id: system.id,
+      ip: formData.ip,
+      port: formData.port,
+      name: formData.name,
+      ownerId: system.ownerId,
+      updateInterval: formData.updateInterval,
+      cretionDate: system.creationDate
+    };
+
+    return apiClient.put("/systems", cleanSystem)
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   getLatestNetworkServicePing(serviceId)
   {
     return apiClient.get("/networkServices/pings/latest", {

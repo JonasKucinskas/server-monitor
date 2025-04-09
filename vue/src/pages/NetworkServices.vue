@@ -234,7 +234,7 @@
         <button class="btn btn-danger" @click="confirmDelete">Delete</button>
       </template>
 
-      <p>Are you sure you want to delete the service <strong>{{ this.selectedService?.name }}</strong>?</p>
+      <p>Are you sure you want to delete the service?<strong>{{ this.selectedService?.name }}</strong>?</p>
     </Modal>
 
   </div>
