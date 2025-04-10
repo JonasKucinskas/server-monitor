@@ -5,7 +5,54 @@ const apiClient = axios.create({
   timeout: 10000000000000, 
 });
 
+apiClient.interceptors.request.use(config => {
+  const token = localStorage.getItem('jwt_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
 export default {
+  login(username, password) {
+
+    const auth = {
+      Username: username,
+      Password: password,
+    };
+
+    return apiClient.post("/auth/login", auth)
+      .then(response => {
+        localStorage.setItem('jwt_token', response.data.token);
+        return response.data;
+      })
+      .catch(error => {
+        console.error("Error executing command:", error);
+        throw error; 
+      });
+  },
+  register(username, password) {
+
+    const user = {
+      id: 0,//ignored
+      username: username,
+      password: password,
+      creationDate: "2025-03-23T14:30:00+00:00"//ignored
+    }
+
+    return apiClient.post("/auth/register", user)
+      .then(response => {
+        return response.data;
+      });
+  },
+  logout() {
+    localStorage.removeItem('jwt_token');
+  },
+  getToken() {
+    return localStorage.getItem('jwt_token');
+  },
   deleteSystem(id)
   {
     return apiClient.delete("/systems", {

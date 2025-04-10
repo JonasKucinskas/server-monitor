@@ -228,6 +228,7 @@ import { BaseTable } from "@/components";
 import apiService from "@/services/api"; 
 import Modal from "@/components/Modal";
 import NotificationTemplate from "./Notifications/NotificationTemplate";
+import { mapState } from 'vuex';
 
 export default {
   components: {
@@ -415,11 +416,16 @@ export default {
       }
     }
   },
+  computed: {
+    ...mapState({
+      user: state => state.currentUser,
+    })
+  },
   async mounted() {
 
     const response = await apiService.getPublicKey();
     this.publicKey = response;
-    this.apiData = await apiService.getSystems(0);
+    this.apiData = await apiService.getSystems(this.user.id);
 
     this.formatApiData();
     this.drawHeaders(this.apiData);

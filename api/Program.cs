@@ -1,13 +1,37 @@
 using System.Net.NetworkInformation;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowVueApp",
+        policy => policy.WithOrigins("http://localhost:8080")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod());
 });
 
 builder.Services.AddControllers(); 
+
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "monitor",
+            ValidAudience = "monitor",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes("superSecretKey12345_superSecretKey12345")) 
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 
 if (!File.Exists("privateKey.pem") || !File.Exists("publicKey.pub"))
 {
@@ -21,6 +45,8 @@ builder.Services.AddHostedService<SystemInitService>();
 
 var app = builder.Build(); 
 
-app.UseCors("AllowAll");
+app.UseCors("AllowVueApp");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.Run("http://localhost:9000");

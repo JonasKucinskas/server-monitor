@@ -1,7 +1,3 @@
-using System.Data;
-using System.Data.Common;
-using System.Reflection;
-using Microsoft.OpenApi.Models;
 using Npgsql;
 
 public class Database
@@ -36,6 +32,8 @@ public class Database
             await conn.CloseAsync();
         }
     }
+
+
 
     public async Task<List<NetworkService>> FetchAllNetworkServices(string systemId)
     {
@@ -182,6 +180,90 @@ public class Database
         }
 
         return pings;
+    }
+
+    public async Task<User> GetUser(string username, string password)
+    {
+        await OpenConnAsync();
+        
+        string query = @"
+            SELECT * FROM users WHERE username = @username AND password_hash = @passwd_hash;
+        ";
+
+        await using var cmd = new NpgsqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("username", username);
+        cmd.Parameters.AddWithValue("passwd_hash", Hashing.HashPassword(password));
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        User user = null;
+
+        try
+        {
+            if (await reader.ReadAsync())
+            {
+                user = new User
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    username = reader.GetString(reader.GetOrdinal("username")),
+                    password = reader.GetString(reader.GetOrdinal("password_hash")),
+                    creationDate = reader.GetDateTime(reader.GetOrdinal("created_at"))
+                };
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error finding user: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return user;
+    }
+
+    public async Task<bool> DoesUserExist(string username)
+    {
+        await OpenConnAsync();
+        
+        string query = @"
+            SELECT * FROM users WHERE username = @username;
+        ";
+
+        await using var cmd = new NpgsqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("username", username);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        bool userExists = false;
+
+        try
+        {
+            if (await reader.ReadAsync())
+            {
+                userExists = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error finding user: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return userExists;
+    }
+
+    public async Task InsertUser(User user)
+    {
+        await OpenConnAsync();
+        await user.InsertToDatabase(conn);
+        await CloseConnAsync();
     }
 
     public async Task<PingData> FetchLatestNetworkServicePing(int serviceId)

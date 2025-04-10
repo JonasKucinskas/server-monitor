@@ -1,9 +1,10 @@
 import VueRouter from "vue-router";
 import routes from "./routes";
+import apiService from "@/services/api";
 
-// configure router
+
 const router = new VueRouter({
-  routes, // short for routes: routes
+  routes, 
   linkExactActiveClass: "active",
   scrollBehavior: (to) => {
     if (to.hash) {
@@ -12,6 +13,16 @@ const router = new VueRouter({
       return { x: 0, y: 0 };
     }
   },
+});
+
+router.beforeEach((to, from, next) => {
+  const token = apiService.getToken();
+
+  if (to.matched.some(record => record.meta.requiresAuth) && !token) {
+    next('/login');
+  } else {
+    next();
+  }
 });
 
 export default router;
