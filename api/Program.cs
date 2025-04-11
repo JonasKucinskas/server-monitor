@@ -25,8 +25,8 @@ builder.Services.AddAuthentication("Bearer")
             ValidateIssuerSigningKey = true,
             ValidIssuer = "monitor",
             ValidAudience = "monitor",
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("superSecretKey12345_superSecretKey12345")) 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey12345_superSecretKey12345")) 
+                
         };
     });
 

@@ -34,38 +34,47 @@
       <collapse-transition>
         <div class="collapse navbar-collapse show" v-show="showMenu">
           <ul class="navbar-nav ml-auto">
-            <div
-              class="search-bar input-group"
-              @click="searchModalVisible = true"
+            <base-dropdown
+              tag="li"
+              :menu-on-right="true"
+              title-tag="a"
+              class="nav-item"
             >
-              <!-- <input type="text" class="form-control" placeholder="Search...">
-              <div class="input-group-addon"><i class="tim-icons icon-zoom-split"></i></div> -->
-              <button
-                class="btn btn-link"
-                id="search-button"
-                data-toggle="modal"
-                data-target="#searchModal"
+              <a
+                slot="title"
+                href="#"
+                class="dropdown-toggle nav-link"
+                data-toggle="dropdown"
+                aria-expanded="true"
               >
-                <i class="tim-icons icon-zoom-split"></i>
-              </button>
-              <!-- You can choose types of search input -->
-            </div>
-            <modal
-              :show.sync="searchModalVisible"
-              class="modal-search"
-              id="searchModal"
-              :centered="false"
-              :show-close="true"
-            >
-              <input
-                slot="header"
-                v-model="searchQuery"
-                type="text"
-                class="form-control"
-                id="inlineFormInputGroup"
-                placeholder="SEARCH"
-              />
-            </modal>
+                <div class="notification d-none d-lg-block d-xl-block"></div>
+                <i class="tim-icons icon-sound-wave"></i>
+                <p class="d-lg-none">New Notifications</p>
+              </a>
+              <li class="nav-link">
+                <a href="#" class="nav-item dropdown-item"
+                  >Mike John responded to your email</a
+                >
+              </li>
+              <li class="nav-link">
+                <a href="#" class="nav-item dropdown-item"
+                  >You have 5 more tasks</a
+                >
+              </li>
+              <li class="nav-link">
+                <a href="#" class="nav-item dropdown-item"
+                  >Your friend Michael is in town</a
+                >
+              </li>
+              <li class="nav-link">
+                <a href="#" class="nav-item dropdown-item"
+                  >Another notification</a
+                >
+              </li>
+              <li class="nav-link">
+                <a href="#" class="nav-item dropdown-item">Another one</a>
+              </li>
+            </base-dropdown>
             <base-dropdown
               tag="li"
               :menu-on-right=true
@@ -87,14 +96,11 @@
                 <p class="d-lg-none">Log out</p>
               </a>
               <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Profile</a>
-              </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Settings</a>
+                <a href="#" class="nav-item dropdown-item" @click="settings">Settings</a>
               </li>
               <div class="dropdown-divider"></div>
               <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Log out</a>
+                <a href="#" class="nav-item dropdown-item" @click="logout">Log out</a>
               </li>
             </base-dropdown>
           </ul>
@@ -106,6 +112,7 @@
 <script>
 import { CollapseTransition } from "vue2-transitions";
 import Modal from "@/components/Modal";
+import apiService from '@/services/api';
 
 export default {
   components: {
@@ -127,6 +134,12 @@ export default {
     };
   },
   methods: {
+    settings() {
+      window.location.href = "/settings"; 
+    },
+    logout() {
+      apiService.logout();
+    },
     capitalizeFirstLetter(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },

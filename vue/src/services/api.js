@@ -15,6 +15,17 @@ apiClient.interceptors.request.use(config => {
   return Promise.reject(error);
 });
 
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('jwt_token'); 
+      window.location.href = "/login"; 
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default {
   login(username, password) {
 
@@ -49,6 +60,7 @@ export default {
   },
   logout() {
     localStorage.removeItem('jwt_token');
+    window.location.href = "/login"; 
   },
   getToken() {
     return localStorage.getItem('jwt_token');

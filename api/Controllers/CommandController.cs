@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
+[Authorize]
 [Route("api/command")]
 public class CommandController : ControllerBase
 {
@@ -9,7 +10,7 @@ public class CommandController : ControllerBase
     {
     }
 
-    [Authorize]
+    
     [HttpPost("execute")]
     public IActionResult ExecuteFunction([FromBody] CommandRequest request)
     {

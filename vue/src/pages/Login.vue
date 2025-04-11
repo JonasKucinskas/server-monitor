@@ -1,15 +1,34 @@
 <template>
-  <div>
-    <h2>Login</h2>
-    <form @submit.prevent="handleLogin">
-      <input v-model="username" placeholder="Username" />
-      <input v-model="password" type="password" placeholder="Password" />
-      <button type="submit">Login</button>
-    </form>
-    <p v-if="error">{{ error }}</p>
-    <div>
-      <p>Don't have an account?</p>
-      <button @click="goToRegister">Register</button>
+  <div class="container mt-5 d-flex justify-content-center">
+    <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+      <h2 class="text-center mb-4">Login</h2>
+      <form @submit.prevent="handleLogin">
+        <div class="mb-3">
+          <input
+            v-model="username"
+            class="form-control"
+            placeholder="Username"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <input
+            v-model="password"
+            type="password"
+            class="form-control"
+            placeholder="Password"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+      </form>
+      <p v-if="error" class="text-danger text-center mt-3">{{ error }}</p>
+      <div class="text-center mt-4">
+        <p>Don't have an account?</p>
+        <button class="btn btn-outline-secondary w-100" @click="goToRegister">
+          Register
+        </button>
+      </div>
     </div>
   </div>
 </template>

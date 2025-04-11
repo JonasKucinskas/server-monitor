@@ -292,7 +292,7 @@ export default {
           icon: "tim-icons icon-bell-55",
           horizontalAlign: 'center',
           verticalAlign: 'top',
-          type: "danger",
+          type: "Success",
           timeout: 3000,
         });
       }

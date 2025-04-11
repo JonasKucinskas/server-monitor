@@ -4,6 +4,7 @@ import apiService from "@/services/api";
 
 
 const router = new VueRouter({
+  mode: 'history',
   routes, 
   linkExactActiveClass: "active",
   scrollBehavior: (to) => {

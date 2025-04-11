@@ -1,10 +1,11 @@
 import DashboardLayout from "@/layout/dashboard/DashboardLayout.vue";
 import SystemsLayout from "@/layout/systems/SampleLayout.vue";
 
+
 import NotFound from "@/pages/NotFoundPage.vue"
 
 const Dashboard = () => import("@/pages/Dashboard.vue");
-const Profile = () => import("@/pages/Profile.vue");
+const Settings = () => import("@/pages/Settings.vue");
 const Notifications = () => import("@/pages/Notifications.vue");
 const Icons = () => import("@/pages/Icons.vue");
 const Typography = () => import("@/pages/Typography.vue");
@@ -24,7 +25,6 @@ const routes = [
     component: DashboardLayout,
     children: [
       { path: "dashboard", name: "dashboard", component: Dashboard, meta: { requiresAuth: true }},
-      { path: "profile", name: "profile", component: Profile, meta: { requiresAuth: true } },
       { path: "notifications", name: "notifications", component: Notifications, meta: { requiresAuth: true } },
       { path: "icons", name: "icons", component: Icons, meta: { requiresAuth: true } },
       { path: "typography", name: "typography", component: Typography, meta: { requiresAuth: true } },
@@ -39,9 +39,12 @@ const routes = [
   {
     path: "/",
     redirect: "/systems",  
+  },
+  {
+    path: "/systems",
     component: SystemsLayout, 
     children: [ 
-      { path: "", name: "systems", component: Systems },
+      { path: "", name: "systems", component: Systems,  meta: { requiresAuth: true }},
     ],
   },
   { 
@@ -58,6 +61,14 @@ const routes = [
     name: "register",
     component: Register
   },
+  { 
+    path: "/settings", 
+    component: SystemsLayout,
+    children: [
+      { path: "", name: "settings", component: Settings, meta: { requiresAuth: true }}
+    ]
+  },
+
 ];
 
 export default routes;

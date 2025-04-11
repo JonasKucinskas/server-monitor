@@ -2,6 +2,10 @@ using Npgsql;
 
 public class Database
 {
+    private static readonly Lazy<Database> _instance = new Lazy<Database>(() => new Database("Host=localhost;Port=5432;Username=postgres;Password=password;Database=monitor"));
+
+    public static Database Instance => _instance.Value;
+
     private readonly NpgsqlConnection conn;
     private readonly string connectionString;
     public Database(string connectionString)
@@ -883,10 +887,10 @@ public class Database
         await CloseConnAsync();
     }
 
-    public async Task InsertServerMetricsAsync(DataPackage metrics)
+    public async Task InsertServerMetricsAsync(DataPackage metrics, string ip)
     {
         await OpenConnAsync();
-        await ConvertToDataBaseObjects(metrics).InsertToDatabase(conn);
+        await ConvertToDataBaseObjects(metrics, ip).InsertToDatabase(conn);
         await CloseConnAsync();
     }
 
@@ -953,12 +957,12 @@ public class Database
         }
     }
 
-    private static ServerMetrics ConvertToDataBaseObjects(DataPackage data)
+    private static ServerMetrics ConvertToDataBaseObjects(DataPackage data, string ip)
     {
         ServerMetrics serverMetrics = new ServerMetrics()
         {
             Time = DateTime.Now,
-            ServerId = "localhost",//TODO 
+            ServerId = ip,
             CpuName = data.Cpu.Name,
             CpuFreq = data.Cpu.Freq,
             BatteryName = data.Battery.Name,

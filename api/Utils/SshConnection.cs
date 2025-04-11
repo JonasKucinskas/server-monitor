@@ -7,21 +7,17 @@ using System.Threading.Tasks;
 
 public sealed class SshConnection
 {
-    private static readonly Lazy<SshConnection> _instance = new Lazy<SshConnection>(() => new SshConnection());
+    private static readonly Lazy<SshConnection> _instance = new Lazy<SshConnection>(() => new SshConnection(Database.Instance));
     public static SshConnection Instance => _instance.Value;
 
     private readonly ConcurrentDictionary<string, SshClient> _sshClients = new ConcurrentDictionary<string, SshClient>();
     private readonly ConcurrentDictionary<string, Timer> _timers = new ConcurrentDictionary<string, Timer>();
     private readonly ConcurrentDictionary<string, int> _currentIntervals = new ConcurrentDictionary<string, int>();
-    private readonly DatabaseQueue<DataPackage> _databaseQueue;
+    private readonly Database _dbService;
 
-    private SshConnection()
+    private SshConnection(Database dbService)
     {
-        _databaseQueue = new DatabaseQueue<DataPackage>(async (data) =>
-        {
-            var repo = new Database("Host=localhost;Port=5432;Username=postgres;Password=password;Database=monitor");
-            await repo.InsertServerMetricsAsync(data);
-        });
+        _dbService = dbService;
     }
 
     public async Task Connect(string agentIpAddress, int agentPort, string username)
@@ -81,7 +77,7 @@ public sealed class SshConnection
         return null;
     }
 
-    private void RequestData(string agentIpAddress, int agentPort, string username)
+    private async void RequestData(string agentIpAddress, int agentPort, string username)
     {
         string serverKey = $"{agentIpAddress}:{agentPort}:{username}";
         if (_sshClients.TryGetValue(serverKey, out SshClient sshClient))
@@ -92,7 +88,7 @@ public sealed class SshConnection
                 {
                     Console.WriteLine(serverKey);
                     DataPackage data = Deserealizer.Deserealize(cmd.Result);
-                    _databaseQueue.Enqueue(data);
+                    await _dbService.InsertServerMetricsAsync(data, agentIpAddress);
                 }
             }
             catch (Exception ex)

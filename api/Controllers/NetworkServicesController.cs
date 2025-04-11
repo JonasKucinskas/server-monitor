@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations; 
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
+[Authorize]
 [Route("api/networkServices")]
 public class NetworkServicesController : ControllerBase
 {
