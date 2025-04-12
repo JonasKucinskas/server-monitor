@@ -4,8 +4,8 @@ using Newtonsoft.Json;
 
 public class Deserealizer
 {
-    public static DataPackage Deserealize(string json)
+    public static T Deserialize<T>(string json)
     {
-        return JsonConvert.DeserializeObject<DataPackage>(json);;
+        return JsonConvert.DeserializeObject<T>(json);
     }
 }

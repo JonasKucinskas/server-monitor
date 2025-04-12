@@ -138,7 +138,7 @@
           </template>
           <template v-else>
             <div class="d-flex flex-column justify-content-center align-items-center h-100">
-              <h3>No Services</h3>
+              <h3>No Systems</h3>
             </div>
           </template>
         </div>

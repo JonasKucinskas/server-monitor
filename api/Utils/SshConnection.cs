@@ -87,7 +87,18 @@ public sealed class SshConnection
                 using (SshCommand cmd = sshClient.RunCommand("echo 'dataRequest'"))
                 {
                     Console.WriteLine(serverKey);
-                    DataPackage data = Deserealizer.Deserealize(cmd.Result);
+                    DataPackage data = Deserealizer.Deserialize<DataPackage>(cmd.Result);
+
+                    var system = await _dbService.FetchSystemByIpAsync(agentIpAddress);
+                    var user = await _dbService.FetchSystemOwnerAsync(system);
+                    var rules = await _dbService.FetchNotificationRulesAsync(user.id, agentIpAddress);
+
+                    List<Process> processes = NotificationManager.GetProcessList(rules, data, agentIpAddress, agentPort);
+                    foreach (var process in processes)
+                    {
+                        await _dbService.InsertProcess(process);
+                    }
+
                     await _dbService.InsertServerMetricsAsync(data, agentIpAddress);
                 }
             }

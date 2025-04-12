@@ -354,6 +354,48 @@ public class Database
         return systems;
     }
 
+    public async Task<User> FetchSystemOwnerAsync(SystemData system)
+    {
+        await OpenConnAsync();
+
+        string serverMetricsQuery = @"
+            SELECT * FROM users WHERE id = @userid;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("userid", system.ownerId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+
+        User user = null;
+
+        try
+        {
+            if (await reader.ReadAsync())
+            {
+                user = new User
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    username = reader.GetString(reader.GetOrdinal("username")),
+                    password = reader.GetString(reader.GetOrdinal("password_hash")),
+                    creationDate = reader.GetDateTime(reader.GetOrdinal("created_at"))
+                };
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error finding user: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return user;
+    }
+
     public async Task<List<SystemData>> FetchAllSystems()
     {
         await OpenConnAsync();
@@ -428,6 +470,46 @@ public class Database
         catch (Exception ex)
         {
             Console.WriteLine($"Error fetching system by name: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return systemData;
+    }
+
+    public async Task<SystemData> FetchSystemByIpAsync(string ip)
+    {
+        await OpenConnAsync();
+        string serverMetricsQuery = @"
+            SELECT * FROM servers WHERE server_ip = @ip;
+        ";
+
+        await using var cmd = new NpgsqlCommand(serverMetricsQuery, conn);
+        cmd.Parameters.AddWithValue("ip", ip);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        var systemData = new SystemData();
+
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                systemData.id = reader.GetInt32(reader.GetOrdinal("server_id"));
+                systemData.ip = reader.GetString(reader.GetOrdinal("server_ip"));
+                systemData.port = reader.GetInt32(reader.GetOrdinal("server_port"));
+                systemData.name = reader.GetString(reader.GetOrdinal("system_name"));
+                systemData.ownerId = reader.GetInt32(reader.GetOrdinal("owner_user_id"));
+                systemData.updateInterval = reader.GetInt32(reader.GetOrdinal("interval"));
+                systemData.creationDate = reader.GetDateTime(reader.GetOrdinal("date_deployed"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching system by ip: {ex.Message}");
         }
         finally
         {
@@ -849,6 +931,55 @@ public class Database
         return networkMetricsList;
     }
 
+    public async Task<List<NotificationRule>> FetchNotificationRulesAsync(int userId, string ip)
+    {
+        await OpenConnAsync();
+        var notificationRulesList = new List<NotificationRule>();
+
+        var notificationRulesCmdQuery = @"
+        
+            SELECT id, user_id, system_ip, resource, usage, timestamp
+            FROM notification_rules
+            WHERE system_ip = @ip AND user_id = @userid;
+        ";
+
+        await using var notificationRulesCmd = new NpgsqlCommand(notificationRulesCmdQuery, conn);
+        notificationRulesCmd.Parameters.AddWithValue("userid", userId);
+        notificationRulesCmd.Parameters.AddWithValue("ip", ip);
+
+        await using (var notificationRulesReader = await notificationRulesCmd.ExecuteReaderAsync())
+        {
+            try
+            {
+                while (await notificationRulesReader.ReadAsync())
+                {
+
+                    NotificationRule rule = new NotificationRule
+                    {
+                        id = notificationRulesReader.GetInt32(notificationRulesReader.GetOrdinal("id")),
+                        userId = notificationRulesReader.GetInt32(notificationRulesReader.GetOrdinal("user_id")),
+                        systemIp = notificationRulesReader.GetString(notificationRulesReader.GetOrdinal("system_ip")),            
+                        resource = notificationRulesReader.GetString(notificationRulesReader.GetOrdinal("resource")),
+                        usage = notificationRulesReader.GetFloat(notificationRulesReader.GetOrdinal("usage")),
+                        timestamp = notificationRulesReader.GetDateTime(notificationRulesReader.GetOrdinal("timestamp")),
+                    };
+
+                    notificationRulesList.Add(rule);
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error fetching notification rules with details: {ex.Message}");
+            }
+            finally
+            {
+                await notificationRulesReader.CloseAsync();
+                await CloseConnAsync();
+            }
+        }
+        return notificationRulesList;
+    }
+
     public async Task InsertSystemAsync(SystemData system)
     {
         await OpenConnAsync();
@@ -956,6 +1087,7 @@ public class Database
             await conn2.CloseAsync();
         }
     }
+    
 
     private static ServerMetrics ConvertToDataBaseObjects(DataPackage data, string ip)
     {
@@ -1047,5 +1179,12 @@ public class Database
         }
 
         return serverMetrics;
+    }
+
+    public async Task InsertProcess(Process process)
+    {
+        await OpenConnAsync();
+        await process.InsertToDatabase(conn);
+        await CloseConnAsync();
     }
 }

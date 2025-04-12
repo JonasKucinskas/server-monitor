@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Text.RegularExpressions;
 
 public class Ram
@@ -13,3 +14,4 @@ public class Ram
     public int SwapFree {get; set;}
     public int SwapUsed => SwapTotal - SwapFree;
 }
+
