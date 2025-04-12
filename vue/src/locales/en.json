@@ -57,5 +57,11 @@
   "filemanager":{
     "header": "File Manager",
     "footer": "Manage System Files"
+  },
+  "notifications":{
+    "header": "Notifications",
+    "footer": "Received Notifications for Defined Rules",
+    "rulesHeader": "Notification Rules",
+    "rulesFooter": "Set Custom Alerts"
   }
 }

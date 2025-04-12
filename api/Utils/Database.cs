@@ -1,3 +1,4 @@
+using System.Data;
 using Npgsql;
 
 public class Database
@@ -988,6 +989,13 @@ public class Database
         await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", system.updateInterval);
     }
 
+    public async Task InsertNotificationRuleAsync(NotificationRule rule)
+    {
+        await OpenConnAsync();
+        await rule.InsertToDatabase(conn);
+        await CloseConnAsync();
+    }
+
     public async Task DeleteSystemAsync(int id)
     {
         await OpenConnAsync();
@@ -995,6 +1003,32 @@ public class Database
         await using var cmd = new NpgsqlCommand(@"DELETE FROM servers WHERE server_id = @Id;", conn);
 
         cmd.Parameters.AddWithValue("Id", id);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
+    public async Task DeleteNotificationsByRuleIdAsync(int ruleid)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM notifications WHERE notification_rule_id = @ruleid;", conn);
+
+        cmd.Parameters.AddWithValue("ruleid", ruleid);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
+    public async Task DeleteNotificationByIdAsync(int notificationid)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM notifications WHERE id = @id;", conn);
+
+        cmd.Parameters.AddWithValue("id", notificationid);
 
         await cmd.ExecuteNonQueryAsync();
         
@@ -1029,6 +1063,13 @@ public class Database
     {
         await OpenConnAsync();
         await service.InsertToDatabase(conn);
+        await CloseConnAsync();
+    }
+
+    public async Task InsertNotificationAsync(Notification notification)
+    {
+        await OpenConnAsync();
+        await notification.InsertToDatabase(conn);
         await CloseConnAsync();
     }
 
@@ -1186,5 +1227,147 @@ public class Database
         await OpenConnAsync();
         await process.InsertToDatabase(conn);
         await CloseConnAsync();
+    }
+
+    public async Task<List<NotificationRule>> FetchAllNotificationRulesAsync(string systemIp, int userId)
+    {
+        await OpenConnAsync();
+
+        var rules = new List<NotificationRule>();
+
+        string notitificationRulesQuery = @"SELECT * FROM notification_rules WHERE system_ip = @systemIp AND user_id = @userId";
+
+        await using var cmd = new NpgsqlCommand(notitificationRulesQuery, conn);
+        cmd.Parameters.AddWithValue("systemIp", systemIp);
+        cmd.Parameters.AddWithValue("userId", userId);
+
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var rule = new NotificationRule
+                {
+
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    userId = reader.GetInt32(reader.GetOrdinal("user_id")),
+                    systemIp = reader.GetString(reader.GetOrdinal("system_ip")),         
+                    resource = reader.GetString(reader.GetOrdinal("resource")),          
+                    usage = reader.GetFloat(reader.GetOrdinal("usage")),
+                    timestamp = reader.GetDateTime(reader.GetOrdinal("timestamp"))
+                };
+
+                rules.Add(rule);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching notifiction rules: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return rules;
+    }
+
+    public async Task<List<Process>> FetchProcessesByNotificationIdAsync(int notificationId)
+    {
+        await OpenConnAsync();
+
+        var processes = new List<Process>();
+
+        string notificationRulesQuery = @"SELECT * FROM processes_data WHERE notification_id = @notificationId";
+
+        await using var cmd = new NpgsqlCommand(notificationRulesQuery, conn);
+        cmd.Parameters.AddWithValue("notificationId", notificationId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var process = new Process
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    notification_id = reader.GetInt32(reader.GetOrdinal("notification_id")),
+                    pid = reader.GetInt32(reader.GetOrdinal("pid")),
+                    process_user = reader.GetString(reader.GetOrdinal("process_user")),
+                    process_time = TimeOnly.FromTimeSpan(reader.GetTimeSpan(reader.GetOrdinal("process_time"))),
+                    system_ip = reader.GetString(reader.GetOrdinal("system_ip")),
+                    name = reader.GetString(reader.GetOrdinal("name")),
+                    cpu_usage = reader.GetFloat(reader.GetOrdinal("cpu_usage")),
+                    ram_usage = reader.GetFloat(reader.GetOrdinal("ram_usage")),
+                    timestamp = reader.GetDateTime(reader.GetOrdinal("timestamp")),
+                };
+
+                processes.Add(process);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching processes: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return processes;
+    }
+
+    public async Task<List<Notification>> FetchNotificationsByRuleIdAsync(int ruleId, int count)
+    {
+        await OpenConnAsync();
+
+        var notifications = new List<Notification>();
+
+        string notificatiosQuery = @"SELECT * FROM notifications WHERE notification_rule_id = @ruleId ORDER BY timestamp DESC";
+
+
+        if (count == 1)
+        {
+            notificatiosQuery = @"SELECT * FROM notifications WHERE notification_rule_id = @ruleId ORDER BY timestamp DESC LIMIT 1";
+        }
+
+
+        await using var cmd = new NpgsqlCommand(notificatiosQuery, conn);
+        cmd.Parameters.AddWithValue("ruleId", ruleId);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        try
+        {
+            while (await reader.ReadAsync())
+            {
+                var notification = new Notification
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),          
+                    notification_rule_id = reader.GetInt32(reader.GetOrdinal("notification_rule_id")), 
+                    resource = reader.GetString(reader.GetOrdinal("resource")),            
+                    usage = reader.GetFloat(reader.GetOrdinal("usage")),        
+                    timestamp = reader.GetDateTime(reader.GetOrdinal("timestamp")),   
+                };
+
+                notifications.Add(notification);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching notifications: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return notifications;
     }
 }

@@ -365,6 +365,7 @@ export default {
     },
     closeModal() {
       this.showModal = false;
+      this.formErrors = [];
     },
     addSystem(){
       this.isAddingSystem = true;

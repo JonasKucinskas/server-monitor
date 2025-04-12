@@ -27,6 +27,116 @@ apiClient.interceptors.response.use(
 );
 
 export default {
+  deleteNotification(id) {
+
+    return apiClient.delete("/notifications", {
+      params: { 
+        notificationId: id
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  deleteNotifications(ruleid) {
+
+    return apiClient.delete("/notifications", {
+      params: { 
+        ruleId: ruleid
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getLatestNotification(ruleid) {
+
+    return apiClient.get("/notifications/latest", {
+      params: { 
+        ruleId: ruleid
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getNotifications(ruleid) {
+
+    return apiClient.get("/notifications", {
+      params: { 
+        ruleId: ruleid
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getNotificationProcesses(notificationid) {
+
+    return apiClient.get("/notifications/processes", {
+      params: { 
+        notificationId: notificationid
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  postNotificationRules(rule, user, system) {
+
+    const cleanRule = {
+      id: 0,//ignored
+      userId: user.id,
+      systemIp: system.ip,
+      resource: rule.resource,//TODO OPERATOR JEI NORESIU :)_)
+      usage: rule.usage,
+      timestamp: "2025-03-23T14:30:00+00:00"//ignored
+    }
+    return apiClient.post("/notifications/rules", cleanRule) 
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  getNotificationRules(systemip, userid) {
+
+    return apiClient.get("/notifications/rules", {
+      params: { 
+        systemIp: systemip, 
+        userid: userid 
+      }
+    })
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   login(username, password) {
 
     const auth = {

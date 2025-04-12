@@ -1,171 +1,391 @@
 <template>
-  <div class="row">
-    <div class="col-md-6">
-      <card>
-        <h4 slot="header">Notifications Style</h4>
-        <base-alert type="info">
-          <span>This is a plain notification</span>
-        </base-alert>
-        <base-alert type="info" dismissible>
-          <span>This is a plain notification</span>
-        </base-alert>
-        <base-alert type="info" dismissible with-icon>
-          <span data-notify="icon" class="tim-icons icon-bell-55"></span>
-          <span data-notify="message"
-            >This is a notification with close button and icon.</span
-          >
-        </base-alert>
-        <base-alert type="info" dismissible with-icon>
-          <span data-notify="icon" class="tim-icons icon-bell-55"></span>
-          <span data-notify="message"
-            >This is a notification with close button and icon and have many
-            lines. You can see that the icon and the close button are always
-            vertically aligned. This is a beautiful notification. So you don't
-            have to worry about the style.</span
-          >
-        </base-alert>
-      </card>
-    </div>
-    <div class="col-md-6">
-      <card>
-        <h4 slot="header">Notifications states</h4>
-        <base-alert type="primary" dismissible>
-          <span
-            ><b> Primary - </b> This is a regular notification made with
-            ".alert-primary"</span
-          >
-        </base-alert>
-        <base-alert type="info" dismissible>
-          <span
-            ><b> Info - </b> This is a regular notification made with
-            ".alert-info"</span
-          >
-        </base-alert>
-        <base-alert type="success" dismissible>
-          <span
-            ><b> Success - </b> This is a regular notification made with
-            ".alert-success"</span
-          >
-        </base-alert>
-        <base-alert type="warning" dismissible>
-          <span
-            ><b> Warning - </b> This is a regular notification made with
-            ".alert-warning"</span
-          >
-        </base-alert>
-        <base-alert type="danger" dismissible>
-          <span
-            ><b> Danger - </b> This is a regular notification made with
-            ".alert-danger"</span
-          >
-        </base-alert>
-      </card>
-    </div>
-    <div class="col-md-12">
-      <card>
-        <div class="places-buttons">
-          <div class="row">
-            <div class="col-md-6 ml-auto mr-auto text-center">
-              <h4 class="card-title">
-                Notifications Places
-                <p class="category">Click to view notifications</p>
-              </h4>
+  <div>
+    <div class="row">
+      <div class="col-md-4">
+        <card type="dashboard-header" class="p-2">
+          <div class="d-flex justify-content-between align-items-center px-2">
+            <div>
+              <h2 class="card-title mb-1">{{ $t("notifications.rulesHeader") }}</h2>
+              <p class="mb-0">{{ $t("notifications.rulesFooter") }}</p>
+            </div>
+            <div class="d-flex align-items-center">
+              <button class="btn btn-sm btn-primary btn-simple active" @click="addNotification()">
+                Create New
+              </button>
             </div>
           </div>
-          <div class="row">
-            <div class="col-lg-8 ml-auto mr-auto">
-              <div class="row">
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('top', 'left')"
-                    >Top Left</base-button
-                  >
+        </card>
+      </div>
+
+      <div class="col-md-8">
+        <card type="dashboard-header" class="p-2">
+          <div class="d-flex justify-content-between align-items-center px-2">
+            <div class="col-10">
+                <h2 class="card-title mb-1">{{ $t("notifications.header") }}</h2>
+                <p class="mb-0">{{ $t("notifications.footer") }}</p>
+            </div>
+            <div v-if="this.notifications.length > 0" class="d-flex align-items-center">
+              <button class="btn btn-sm btn-danger btn-simple active" @click="showDeleteConfirmation()">
+                Clear All
+              </button>
+            </div>
+          </div>
+        </card>
+      </div>
+    </div>
+
+
+    <div class="row">
+      <div class="col-md-4">
+        <card class=".full-height">
+          <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center">
+            <template v-if="this.notificationRules.length > 0">
+              <div
+                v-for="(rule, index) in this.notificationRules"
+                :key="rule.id"
+                class="row p-3 align-items-center system-panel mb-3 clickable-panel"
+                @click="onNotificationRuleClick(rule)"
+              >
+                <div class="col text-center">
+                  <strong>{{ rule.resource }}</strong>
+                  <div>{{ rule.usage }}</div>
                 </div>
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('top', 'center')"
-                    >Top Center</base-button
-                  >
-                </div>
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('top', 'right')"
-                    >Top Right</base-button
-                  >
+                
+                <div class="col d-flex justify-content-end align-items-center">
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="editSystem(system)">
+                      <i class="tim-icons icon-settings-gear-63"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="showDeleteConfirmation()">
+                      <i class="tim-icons icon-simple-remove"></i> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
+            <template v-else>
+              <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                <h3>No Notifications</h3>
+              </div>
+            </template>
           </div>
-          <div class="row">
-            <div class="col-lg-8 ml-auto mr-auto">
-              <div class="row">
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('bottom', 'left')"
-                    >Bottom Left</base-button
-                  >
+        </card>
+      </div>
+
+      <div class="col-md-8">
+        <card class=".full-height">
+          <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center">
+            <template v-if="notifications.length > 0">
+              <div v-for="(notification, index) in notifications" :key="index" class="row p-3 align-items-center system-panel mb-3 clickable-panel">
+
+                <div class="col text-center">
+                  <strong class="notification-resource">{{ notification.resource.toUpperCase() }}</strong>
                 </div>
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('bottom', 'center')"
-                    >Bottom Center</base-button
-                  >
+                
+                <div class="col d-flex align-items-center justify-content-center">
+                  <div class="usage-percentage">{{ notification.usage }}%</div>
+                  <div class="progress" style="width: 100px; margin-left: 10px;">
+                    <div
+                      class="progress-bar"
+                      role="progressbar"
+                      :style="{ width: notification.usage + '%' }"
+                      :class="{
+                        'bg-success': notification.usage < 40,
+                        'bg-warning': notification.usage >= 40 && notification.usage < 70,
+                        'bg-danger': notification.usage >= 70
+                      }"
+                      aria-valuenow="notification.usage"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
                 </div>
-                <div class="col-md-4">
-                  <base-button
-                    type="primary"
-                    block
-                    @click="notifyVue('bottom', 'right')"
-                    >Bottom Right</base-button
-                  >
+
+                <div class="col text-center">
+                  <p class="text-muted">{{ formatDate(notification.timestamp) }}</p>
+                </div>
+                
+                <div class="col text-center">
+                  <button class="btn btn-sm btn-danger btn-simple active" @click="clearNotification(notification.id)">
+                    <i class="tim-icons icon-simple-remove"></i> Dismiss
+                  </button>
                 </div>
               </div>
+            </template>
+            <template v-else>
+              <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                <h4>No Notifications</h4>
+              </div>
+            </template>
+          </div>
+        </card>
+      </div>
+
+      <Modal
+        :show="showModal"
+        @close="closeModal"
+        type="notice"
+        :centered="true"
+        gradient="primary"
+        modalClasses="custom-modal-class"
+        :animationDuration="300"
+      >
+        <template v-slot:header>
+          <h5 class="modal-title">Enter Notification Details</h5>
+        </template>
+
+        <template v-slot:footer>
+          <button class="btn btn-secondary" @click="closeModal">Cancel</button>
+          <button class="btn btn-primary" @click="handleSubmit">Submit</button>
+        </template>
+
+        <form @submit.prevent="handleSubmit">
+          <div class="form-group row">
+
+            <div class="col-md-4">
+              <label for="component">Component</label>
+              <select
+                v-model="formData.component"
+                class="form-control"
+                id="component"
+                :class="{ 'is-invalid': formErrors.component }"
+                required
+              >
+                <option disabled value="">Select a component</option>
+                <option value="cpu">CPU</option>
+                <option value="ram">RAM</option>
+                <option value="disk">Disk</option>
+                <option value="swap">Swap</option>
+                <option value="sensors">Sensors</option>
+                <option value="battery">Battery</option>
+              </select>
+              <div v-if="formErrors.component" class="invalid-feedback">{{ formErrors.component }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <label for="operator">Operator</label>
+              <select
+                v-model="formData.operator"
+                class="form-control"
+                id="operator"
+                :class="{ 'is-invalid': formErrors.operator }"
+                required
+              >
+                <option disabled value="">Select operator</option>
+                <option value="greater">More than</option>
+                <option value="less">Less than</option>
+              </select>
+              <div v-if="formErrors.operator" class="invalid-feedback">{{ formErrors.operator }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <label for="threshold">Usage %</label>
+              <input
+                v-model="formData.usage"
+                type="number"
+                class="form-control"
+                id="usage"
+                :class="{ 'is-invalid': formErrors.usage }"
+                required
+              />
+              <div v-if="formErrors.usage" class="invalid-feedback">{{ formErrors.usage }}</div>
             </div>
           </div>
-        </div>
-      </card>
+        </form>
+      </Modal>
+
+
+      <Modal
+      :show="showDeleteConfirmationModal"
+      @close="closeDeleteConfirmationModal"
+      type="notice"
+      :centered="true"
+      gradient="danger"
+      modalClasses="custom-modal-class"
+      :animationDuration="300"
+      >
+        <template v-slot:header>
+          <h5 class="modal-title">Confirm Deletion</h5>
+        </template>
+
+        <template v-slot:footer>
+          <button class="btn btn-secondary" @click="closeDeleteConfirmationModal">Cancel</button>
+          <button class="btn btn-danger" @click="clearAllNotifications()">Delete</button>
+        </template>
+
+        <p>Are you sure you want to clear all notifications?</p>
+      </Modal>
+
     </div>
   </div>
 </template>
+
 <script>
+import Modal from "@/components/Modal";
 import NotificationTemplate from "./Notifications/NotificationTemplate";
-import { BaseAlert } from "@/components";
+import { mapState } from 'vuex';
+import apiService from "@/services/api"; 
 
 export default {
   components: {
-    BaseAlert,
+    Modal
+  },
+  computed: {
+    ...mapState({
+      user: state => state.currentUser,
+      system: state => state.currentSystem,
+    })
+  },
+  async mounted() {
+    const response = await apiService.getNotificationRules(this.system.ip, this.user.id);
+
+    this.notificationRules = response;
+
+    if (this.notificationRules.length > 0)
+    {
+      this.onNotificationRuleClick(this.notificationRules[0]);
+    }
+
+    this.intervalId = setInterval(() => {
+      this.fetchLatestNotification();
+    }, this.system.updateInterval * 1000);
+  },
+  
+  beforeDestroy() { 
+    clearInterval(this.intervalId);
   },
   data() {
     return {
-      type: ["", "info", "success", "warning", "danger"],
-      notifications: {
-        topCenter: false,
+      notificationRules: [],
+      notifications: [],
+      selectedNotificationRule: "",
+      intervalId: null,
+      showModal: false,
+      showDeleteConfirmationModal: false,
+      formErrors: {},
+      formData: {
+        ramThreshhold: '',
+        cpuThreshhold: '',
       },
     };
   },
   methods: {
-    notifyVue(verticalAlign, horizontalAlign) {
-      const color = Math.floor(Math.random() * 4 + 1);
+    async fetchLatestNotification()
+    {
+      const response = await apiService.getLatestNotification(this.selectedNotificationRule.id);
+      
+
+      if (response.id !== this.notifications[0].id)
+      {
+        this.notifications.unshift(response);
+      }
+    },
+    showDeleteConfirmation() {
+      this.showDeleteConfirmationModal = true;
+    },
+    closeDeleteConfirmationModal() {
+      this.showDeleteConfirmationModal = false;
+    },
+    async clearAllNotifications(){
+      await apiService.deleteNotifications(this.selectedNotificationRule.id);
+      this.notifications = [];
+      this.showDeleteConfirmationModal = false;
+    },
+    async clearNotification(id){
+      await apiService.deleteNotification(id);
+      this.notifications = this.notifications.filter(notification => notification.id !== id);
+    },
+    formatDate(timestamp) {
+      const date = new Date(timestamp);
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    },
+    async onNotificationRuleClick(notificationRule)
+    {
+      this.selectedNotificationRule = notificationRule;
+      
+      const response = await apiService.getNotifications(notificationRule.id);
+      this.notifications = response;
+      
+    },
+    closeModal() {
+      this.showModal = false;
+      this.formData = {
+        ramThreshhold: '',
+        cpuThreshhold: '',
+      };
+    },
+    async handleSubmit() {
+      this.formErrors = {};
+
+      console.log("in submit");
+
+      let isValid = true;
+      if(!this.formData.component) {
+        this.formErrors.component = 'This field is required.';
+        isValid = false;
+      } 
+      
+      if(!this.formData.operator) {
+        this.formErrors.operator = 'This field is required.';
+        isValid = false;
+      }
+
+      if(!this.formData.usage) {
+        this.formErrors.usage = 'This field is required.';
+        isValid = false;
+      }
+
+      if (isValid) {
+
+        const rule = {
+          resource: this.formData.component,
+          operator: this.formData.operator,
+          usage: this.formData.usage,
+        }
+
+        console.log(this.formData);
+
+        await apiService.postNotificationRules(rule, this.user, this.system);
+        this.closeModal();
+        this.notifyVue("Notification Created!");
+      }
+    },
+    addNotification(){
+      this.showModal = true;
+      this.formErrors = {};
+      this.formData = {
+        ramThreshhold: '',
+        cpuThreshhold: '',
+      };
+
+    },
+    notifyVue(message) {
       this.$notify({
         component: NotificationTemplate,
+        message: message,
+        icon: "ticon",
         icon: "tim-icons icon-bell-55",
-        horizontalAlign: horizontalAlign,
-        verticalAlign: verticalAlign,
-        type: this.type[color],
-        timeout: 0,
+        horizontalAlign: 'center',
+        verticalAlign: 'top',
+        type: "danger",
+        timeout: 3000,
       });
     },
   },
 };
 </script>
-<style></style>
+
+<style scoped>
+body {
+  font-family: Arial, sans-serif;
+}
+
+.modal .form-control {
+  color: black !important;
+}
+
+.full-height {
+  height: 100vh;
+  overflow-y: auto;
+}
+</style>

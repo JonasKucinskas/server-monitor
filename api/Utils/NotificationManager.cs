@@ -5,12 +5,29 @@ using Microsoft.AspNetCore.Mvc;
 
 public static class NotificationManager
 {
-    public static List<Process> GetProcessList(List<NotificationRule> rules, DataPackage data, string agentIpAddress, int agentPort)
+    public static List<Process> GetProcessList(List<Notification> notifications, string agentIpAddress, int agentPort)
     {
-        return GetProcessOutputs(rules, data, agentIpAddress, agentPort);
+        //return GetProcessOutputs(data, notifications, agentIpAddress, agentPort);
+        List<Process> processes = new List<Process>();
+
+        foreach (var notification in notifications)
+        {
+            string sort = notification.resource;//TODO FIX THIS ABBY up
+
+            if (notification.resource == "ram")
+            {
+                sort = "mem";
+            }
+
+            string command = $"ps -eo pid,user,cmd,time,%mem,%cpu --sort=-%{sort} | head -n 8";
+            string output = SshConnection.Instance.RunCmd(agentIpAddress, agentPort, command);
+            processes.AddRange(ParseProcessOutput(output, agentIpAddress, notification.id));
+        }
+
+        return processes;
     }
 
-    public static List<Process> ParseProcessOutput(string output, string agentIpAddress, int ruleId)
+    public static List<Process> ParseProcessOutput(string output, string agentIpAddress, int notificationId)
     {
         List<Process> processes = new List<Process>();
 
@@ -58,7 +75,7 @@ public static class NotificationManager
                 ram_usage = (float)Math.Round((double)ramUsage, 2),  
                 cpu_usage = (float)Math.Round((double)cpuUsage, 2),  
                 system_ip = agentIpAddress,
-                notification_rule_id = ruleId
+                notification_id = notificationId
             };
 
             processes.Add(processInfo);
@@ -67,40 +84,97 @@ public static class NotificationManager
         return processes;
     }
 
-    public static List<Process> GetProcessOutputs(List<NotificationRule> rules, DataPackage data, string agentIpAddress, int agentPort)
+    public static List<Notification> GetNotificationData(List<NotificationRule> rules, DataPackage data)
     {
-        List<Process> processes = new List<Process>();
+        List<Notification> notifications = new List<Notification>();
 
         foreach (var rule in rules)
         {
-            string command = GetCommandForRule(rule, data);
-
-            if (!string.IsNullOrEmpty(command))
+            switch (rule.resource)
             {
-                string output = SshConnection.Instance.RunCmd(agentIpAddress, agentPort, command);
-                processes.AddRange(ParseProcessOutput(output, agentIpAddress, rule.id));
+                case "cpu":
+                    if (data.Cpu.Cores[0].Total >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = (float)Math.Round((double)data.Cpu.Cores[0].Total, 2)
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                case "ram":
+
+                    float ramUsage = data.Ram.MemUsed * 100 / data.Ram.MemTotal;
+                    if (ramUsage >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = (float)Math.Round((double)ramUsage, 2)
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                case "disk":
+                    var diskUsage = data.Disk.FreeSpace * 100 / data.Disk.TotalSpace;
+                    if (diskUsage >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = (float)Math.Round((double)diskUsage, 2)
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                case "swap":
+                    var swapUsage = data.Ram.SwapFree * 100 / data.Ram.SwapTotal;
+                    if (swapUsage >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = (float)Math.Round((double)swapUsage, 2)
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                case "sensors":
+                    var sensorUsage = data.SensorList.Sensors[0].Value;
+                    if (sensorUsage >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = sensorUsage
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                case "battery":
+                    var batteryUsage = data.Battery.Capacity;
+                    if (batteryUsage >= rule.usage)
+                    {
+                        Notification notification = new Notification()
+                        {
+                            notification_rule_id = rule.id,
+                            resource = rule.resource,
+                            usage = batteryUsage
+                        };
+                        notifications.Add(notification);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
-        return processes;
-    }
-
-    private static string GetCommandForRule(NotificationRule rule, DataPackage data)
-    {
-        switch (rule.resource)
-        {
-            case "cpu":
-                if (data.Cpu.Cores[0].Total >= rule.usage)
-                    return "ps -eo pid,user,cmd,time,%mem,%cpu --sort=-%cpu | head -n 8";
-                break;
-            case "mem":
-                float ramUsage = data.Ram.MemUsed * 100 / data.Ram.MemTotal;
-                if (ramUsage >= rule.usage)
-                    return "ps -eo pid,user,cmd,time,%mem,%cpu --sort=-%mem | head -n 8";
-                break;
-            default:
-                break;
-        }
-        return string.Empty;
+        return notifications;
     }
 }

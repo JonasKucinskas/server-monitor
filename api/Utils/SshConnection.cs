@@ -93,10 +93,21 @@ public sealed class SshConnection
                     var user = await _dbService.FetchSystemOwnerAsync(system);
                     var rules = await _dbService.FetchNotificationRulesAsync(user.id, agentIpAddress);
 
-                    List<Process> processes = NotificationManager.GetProcessList(rules, data, agentIpAddress, agentPort);
-                    foreach (var process in processes)
+                    List<Notification> notifications = NotificationManager.GetNotificationData(rules, data);
+
+                    if (notifications.Count > 0)
                     {
-                        await _dbService.InsertProcess(process);
+                        foreach (var notification in notifications)
+                        {
+                            await _dbService.InsertNotificationAsync(notification);
+                        }
+
+                        List<Process> processes = NotificationManager.GetProcessList(notifications, agentIpAddress, agentPort);
+                        
+                        foreach (var process in processes)
+                        {
+                            await _dbService.InsertProcess(process);
+                        }
                     }
 
                     await _dbService.InsertServerMetricsAsync(data, agentIpAddress);
