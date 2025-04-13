@@ -1,288 +1,263 @@
 <template>
   <div>
-
-    <card type="dashboard-header">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="col-10">
-          <h2 class="card-title">{{ this.systemInfo.name }}</h2>
-          <div class="d-flex align-items-center mt-2">
-            <p class="mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
-              {{ this.apiData[0]?.serverId }}
-            </p>
-            <p class="mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-arrow-up h-4 w-4"><path d="M13.228 21.925A10 10 0 1 1 21.994 12.338"></path><path d="M12 6v6l1.562.781"></path><path d="m14 18 4-4 4 4"></path><path d="M18 22v-8"></path></svg>              
-              {{ this.uptime }}
-            </p>
-            <p class="mr-3"><svg viewBox="0 0 256 256" width="24" height="24" class="h-4 w-4"><path fill="currentColor" d="M231 217a12 12 0 0 1-16-2c-2-1-35-44-35-127a52 52 0 1 0-104 0c0 83-33 126-35 127a12 12 0 0 1-18-14c0-1 29-39 29-113a76 76 0 1 1 152 0c0 74 29 112 29 113a12 12 0 0 1-2 16m-127-97a16 16 0 1 0-16-16 16 16 0 0 0 16 16m64-16a16 16 0 1 0-16 16 16 16 0 0 0 16-16m-73 51 28 12a12 12 0 0 0 10 0l28-12a12 12 0 0 0-10-22l-23 10-23-10a12 12 0 0 0-10 22m33 29a57 57 0 0 0-39 15 12 12 0 0 0 17 18 33 33 0 0 1 44 0 12 12 0 1 0 17-18 57 57 0 0 0-39-15"></path></svg>
-              {{ this.kernel }}
-            </p>
-            <p class="mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu h-4 w-4"><rect width="16" height="16" x="4" y="4" rx="2"></rect><rect width="6" height="6" x="9" y="9" rx="1"></rect><path d="M15 2v2"></path><path d="M15 20v2"></path><path d="M2 15h2"></path><path d="M2 9h2"></path><path d="M20 15h2"></path><path d="M20 9h2"></path><path d="M9 2v2"></path><path d="M9 20v2"></path></svg>              
-              {{ this.apiData[0]?.cpuName }}
-            </p>
-          </div>
-        </div>
-
-        <div class="col-2 d-flex align-items-center justify-content-end">
-          <date-range-picker 
-            v-model="dateRange"
-            :single-date-picker="false"
-            :ranges="false"
-            :minDate="this.minDate" 
-            :maxDate="this.maxDate"
-            :showDropdowns="false"
-            :time-picker="false"
-            :auto-apply="true"
-            :opens="'left'"
-            :locale-data="localeData"
-            @update="updateRangeValues"
-          >
-            <template v-slot:input="picker">
-              {{ picker.startDate | date }} - {{ picker.endDate | date }}
-            </template>
-          </date-range-picker>
-        </div>
-
-        <!--
-        <div class="col-5 d-flex align-items-center justify-content-end">
-          <base-combo-box
-            title="Select an option"
-            :options="['Option 1', 'Option 2', 'Option 3']"
-            :titleClasses="'btn btn-primary'"
-            :menuClasses="'dropdown-menu'"
-            :selectedOption="selectedOption"
-            @select="handleComboBoxSelect"
-          >
-          <template v-slot:title="{ isOpen }">
-            <div class="icon-and-text">
-              <span class="text">{{ selectedOption || 'Select an option' }}</span>
-              <span class="icon">
-                <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up h-4 w-4">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <path d="M3 3v5h5"></path>
-                  <path d="M12 7v5l4 2"></path>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down h-4 w-4">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <path d="M3 3v5h5"></path>
-                  <path d="M12 7v5l4 2"></path>
-                </svg>
-              </span>
-            </div>
-          </template>
-          </base-combo-box>
-        </div>
-        -->
-      </div>
-    </card>
-
-    
-    <div class="row">
-      <div class="col-12">
-        <card type="chart" ref="bigChartCard">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6">
-                <h2 class="card-title">{{ $t("dashboard.cpuUsageHeader") }}</h2>
-                <h5 class="card-category"> {{ $t("dashboard.cpuUsageFooter") }} </h5>
-              </div>
-              <div class="col-sm-6">
-                <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                  <label
-                    v-for="(option, index) in cpuChartCategories"
-                    :key="option"
-                    class="btn btn-sm btn-primary btn-simple"
-                    :class="{ active: cpuChart.activeIndex === index }"
-                    :id="index"
-                  >
-                    <input
-                      type="radio"
-                      @click="initCpuChart(index)"
-                      name="options"
-                      autocomplete="off"
-                      :checked="cpuChart.activeIndex === index"
-                    />
-                    {{ option }}
-                  </label>
-                </div>
-              </div>
-            </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              ref="cpuChart"
-              chart-id="cpu-chart"
-              :chart-data="cpuChart.chartData"
-              :gradient-colors="cpuChart.gradientColors"
-              :gradient-stops="cpuChart.gradientStops"
-              :extra-options="cpuChart.extraOptions"
-            />
-          </div>
-        </card>
-      </div>
+    <div v-if="loading" class="custom-loader-wrapper">
+      <div class="custom-spinner"></div>
+      <p class="mt-3">Loading dashboard data...</p>
     </div>
 
-    <div class="row">
-      <div class="col-12">
-        <card type="chart" ref="bigChartCard">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6 text-left">
-                <h2 class="card-title">{{ $t("dashboard.networkUsageHeader") }}</h2>
-                <h5 class="card-category">{{ $t("dashboard.networkUsageFooter") }}</h5>
-              </div>
-              <div class="col-sm-6">
-                <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                  <label
-                    v-for="(option, index) in networkChartCategories"
-                    :key="option"
-                    class="btn btn-sm btn-primary btn-simple"
-                    :class="{ active: networkChart.activeIndex === index }"
-                    :id="index"
-                  >
-                    <input
-                      type="radio"
-                      @click="initNetworkChart(index)"
-                      name="options"
-                      autocomplete="off"
-                      :checked="networkChart.activeIndex === index"
-                    />
-                    {{ option }}
-                  </label>
-                </div>
-                
-                <div v-if="networkChart.activeIndex === 1" class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                  <!--0-download 1-upload--->
-                  <label
-                    v-for="(option, index) in networkChartExtraCategories"
-                    :key="option"
-                    class="btn btn-sm btn-primary btn-simple"
-                    :class="{ active: networkChart.uploadIndex === index }"
-                    :id="index"
-                  >
-                    <input
-                      type="radio"
-                      @click="initNetworkChartAllInterfaces(index)"
-                      name="options"
-                      autocomplete="off"
-                      :checked="networkChart.uploadIndex === index"
-                    />
-                    {{ option }}
-                  </label>
-                </div>
-              </div>
-
+    <div v-else>
+      <card type="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="col-10">
+            <h2 class="card-title">{{ this.systemInfo.name }}</h2>
+            <div class="d-flex align-items-center mt-2">
+              <p class="mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                {{ this.apiData[0]?.serverId }}
+              </p>
+              <p class="mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-arrow-up h-4 w-4"><path d="M13.228 21.925A10 10 0 1 1 21.994 12.338"></path><path d="M12 6v6l1.562.781"></path><path d="m14 18 4-4 4 4"></path><path d="M18 22v-8"></path></svg>              
+                {{ this.uptime }}
+              </p>
+              <p class="mr-3"><svg viewBox="0 0 256 256" width="24" height="24" class="h-4 w-4"><path fill="currentColor" d="M231 217a12 12 0 0 1-16-2c-2-1-35-44-35-127a52 52 0 1 0-104 0c0 83-33 126-35 127a12 12 0 0 1-18-14c0-1 29-39 29-113a76 76 0 1 1 152 0c0 74 29 112 29 113a12 12 0 0 1-2 16m-127-97a16 16 0 1 0-16-16 16 16 0 0 0 16 16m64-16a16 16 0 1 0-16 16 16 16 0 0 0 16-16m-73 51 28 12a12 12 0 0 0 10 0l28-12a12 12 0 0 0-10-22l-23 10-23-10a12 12 0 0 0-10 22m33 29a57 57 0 0 0-39 15 12 12 0 0 0 17 18 33 33 0 0 1 44 0 12 12 0 1 0 17-18 57 57 0 0 0-39-15"></path></svg>
+                {{ this.kernel }}
+              </p>
+              <p class="mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu h-4 w-4"><rect width="16" height="16" x="4" y="4" rx="2"></rect><rect width="6" height="6" x="9" y="9" rx="1"></rect><path d="M15 2v2"></path><path d="M15 20v2"></path><path d="M2 15h2"></path><path d="M2 9h2"></path><path d="M20 15h2"></path><path d="M20 9h2"></path><path d="M9 2v2"></path><path d="M9 20v2"></path></svg>              
+                {{ this.apiData[0]?.cpuName }}
+              </p>
             </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="network-chart"
-              :chart-data="networkChart.chartData"
-              :gradient-stops="networkChart.gradientStops"
-              :extra-options="networkChart.extraOptions"
-            />
           </div>
-        </card>
-      </div>
-    </div>
 
-    <div class="row">
-      <div class="col-lg-4">
-        <card type="chart">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6 text-left">
-                <h2 class="card-title">{{ $t("dashboard.ramUsageHeader") }}</h2>
-                <h5 class="card-category">{{ $t("dashboard.ramUsageFooter") }}</h5>
-              </div>
-            </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="ram-chart"
-              :chart-data="ramChart.chartData"
-              :gradient-stops="ramChart.gradientStops"
-              :extra-options="ramChart.extraOptions"
-            />
+          <div class="col-2 d-flex align-items-center justify-content-end">
+            <date-range-picker 
+              v-model="dateRange"
+              :single-date-picker="false"
+              :ranges="false"
+              :minDate="this.minDate" 
+              :maxDate="this.maxDate"
+              :showDropdowns="false"
+              :time-picker="false"
+              :auto-apply="true"
+              :opens="'left'"
+              :locale-data="localeData"
+              @update="updateRangeValues"
+            >
+              <template v-slot:input="picker">
+                {{ picker.startDate | date }} - {{ picker.endDate | date }}
+              </template>
+            </date-range-picker>
           </div>
-        </card>
-      </div>
+        </div>
+      </card>
 
-      <div class="col-lg-4">
-        <card type="chart">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6 text-left">
-                <h2 class="card-title">{{ $t("dashboard.diskUsageHeader") }}</h2>
-                <h5 class="card-category">{{ $t("dashboard.diskUsageFooter") }}</h5>
-              </div>
-            </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="ram-chart"
-              :chart-data="diskChart.chartData"
-              :gradient-stops="diskChart.gradientStops"
-              :extra-options="diskChart.extraOptions"
-            />
-          </div>
-        </card>
-      </div>
-
-     
-
-      <div class="col-lg-4">
-        <card type="chart">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6 text-left">
-                <h2 class="card-title">{{ $t("dashboard.swapUsageHeader") }}</h2>
-                <h5 class="card-category">{{ $t("dashboard.swapUsageFooter") }}</h5>
-              </div>
-            </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="swap-chart"
-              :chart-data="swapChart.chartData"
-              :gradient-stops="swapChart.gradientStops"
-              :extra-options="swapChart.extraOptions"
-            />
-          </div>
-        </card>
-      </div>
       
-    </div>
-
-    <div class="row">
-      <div class="col-12">
-        <card type="chart" ref="bigChartCard">
-          <template slot="header">
-            <div class="row">
-              <div class="col-sm-6 text-left">
-                <h2 class="card-title">{{ $t("dashboard.sensorUsageHeader") }}</h2>
-                <h5 class="card-category"> {{ $t("dashboard.sensorUsageFooter") }} </h5>
+      <div class="row">
+        <div class="col-12">
+          <card type="chart" ref="bigChartCard">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h2 class="card-title">{{ $t("dashboard.cpuUsageHeader") }}</h2>
+                  <h5 class="card-category"> {{ $t("dashboard.cpuUsageFooter") }} </h5>
+                </div>
+                <div class="col-sm-6">
+                  <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
+                    <label
+                      v-for="(option, index) in cpuChartCategories"
+                      :key="option"
+                      class="btn btn-sm btn-primary btn-simple"
+                      :class="{ active: cpuChart.activeIndex === index }"
+                      :id="index"
+                    >
+                      <input
+                        type="radio"
+                        @click="initCpuChart(index)"
+                        name="options"
+                        autocomplete="off"
+                        :checked="cpuChart.activeIndex === index"
+                      />
+                      {{ option }}
+                    </label>
+                  </div>
+                </div>
               </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                ref="cpuChart"
+                chart-id="cpu-chart"
+                :chart-data="cpuChart.chartData"
+                :gradient-colors="cpuChart.gradientColors"
+                :gradient-stops="cpuChart.gradientStops"
+                :extra-options="cpuChart.extraOptions"
+              />
             </div>
-          </template>
-          <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              ref="sensorChart"
-              chart-id="sensor-chart"
-              :chart-data="sensorChart.chartData"
-              :gradient-colors="sensorChart.gradientColors"
-              :gradient-stops="sensorChart.gradientStops"
-              :extra-options="sensorChart.extraOptions"
-            />
-          </div>
-        </card>
+          </card>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+          <card type="chart" ref="bigChartCard">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.networkUsageHeader") }}</h2>
+                  <h5 class="card-category">{{ $t("dashboard.networkUsageFooter") }}</h5>
+                </div>
+                <div class="col-sm-6">
+                  <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
+                    <label
+                      v-for="(option, index) in networkChartCategories"
+                      :key="option"
+                      class="btn btn-sm btn-primary btn-simple"
+                      :class="{ active: networkChart.activeIndex === index }"
+                      :id="index"
+                    >
+                      <input
+                        type="radio"
+                        @click="initNetworkChart(index)"
+                        name="options"
+                        autocomplete="off"
+                        :checked="networkChart.activeIndex === index"
+                      />
+                      {{ option }}
+                    </label>
+                  </div>
+                  
+                  <div v-if="networkChart.activeIndex === 1" class="btn-group btn-group-toggle float-right" data-toggle="buttons">
+                    <!--0-download 1-upload--->
+                    <label
+                      v-for="(option, index) in networkChartExtraCategories"
+                      :key="option"
+                      class="btn btn-sm btn-primary btn-simple"
+                      :class="{ active: networkChart.uploadIndex === index }"
+                      :id="index"
+                    >
+                      <input
+                        type="radio"
+                        @click="initNetworkChartAllInterfaces(index)"
+                        name="options"
+                        autocomplete="off"
+                        :checked="networkChart.uploadIndex === index"
+                      />
+                      {{ option }}
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                chart-id="network-chart"
+                :chart-data="networkChart.chartData"
+                :gradient-stops="networkChart.gradientStops"
+                :extra-options="networkChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-4">
+          <card type="chart">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.ramUsageHeader") }}</h2>
+                  <h5 class="card-category">{{ $t("dashboard.ramUsageFooter") }}</h5>
+                </div>
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                chart-id="ram-chart"
+                :chart-data="ramChart.chartData"
+                :gradient-stops="ramChart.gradientStops"
+                :extra-options="ramChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
+
+        <div class="col-lg-4">
+          <card type="chart">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.diskUsageHeader") }}</h2>
+                  <h5 class="card-category">{{ $t("dashboard.diskUsageFooter") }}</h5>
+                </div>
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                chart-id="ram-chart"
+                :chart-data="diskChart.chartData"
+                :gradient-stops="diskChart.gradientStops"
+                :extra-options="diskChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
+
+      
+
+        <div class="col-lg-4">
+          <card type="chart">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.swapUsageHeader") }}</h2>
+                  <h5 class="card-category">{{ $t("dashboard.swapUsageFooter") }}</h5>
+                </div>
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                chart-id="swap-chart"
+                :chart-data="swapChart.chartData"
+                :gradient-stops="swapChart.gradientStops"
+                :extra-options="swapChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
+        
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+          <card type="chart" ref="bigChartCard">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.sensorUsageHeader") }}</h2>
+                  <h5 class="card-category"> {{ $t("dashboard.sensorUsageFooter") }} </h5>
+                </div>
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                ref="sensorChart"
+                chart-id="sensor-chart"
+                :chart-data="sensorChart.chartData"
+                :gradient-colors="sensorChart.gradientColors"
+                :gradient-stops="sensorChart.gradientStops"
+                :extra-options="sensorChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
       </div>
     </div>
   </div>
@@ -310,6 +285,7 @@ export default {
     return {
       minDate: "",
       maxDate: "",
+      loading: true,
       dateRange: { //todo
         startDate: '2025-03-18', 
         endDate: '2025-03-19' 
@@ -898,13 +874,75 @@ export default {
 
     this.i18n = this.$i18n;
 
-    this.initCpuChart(0);
-    this.initSensorChart();
-    this.initRamChart();
-    this.initNetworkChart(0);
-    this.initDiskChart();
-    this.initSwapChart();
+    
+
+
+    this.loading = false;
+    this.$nextTick(() => {
+        // Now refs are accessible
+      this.initCpuChart(0);
+      this.initSensorChart();
+      this.initRamChart();
+      this.initNetworkChart(0);
+      this.initDiskChart();
+      this.initSwapChart();
+    })
+
+    
   },
 };
 </script>
-<style></style>
+<style>
+.custom-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 5rem 0;
+  text-align: center;
+  color: #555;
+}
+
+.custom-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(0, 123, 255, 0.2);
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vue-daterange-picker {
+    display: inline-block;
+    width: 100%;
+    max-width: 300px;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.reportrange-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 45px;
+    background-color: #f8f9fa; 
+    color: #212529;            
+    border: 1px solid #ced4da; 
+    border-radius: 0.375rem;  
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.reportrange-text:hover {
+    background-color: #e2e6ea; 
+    border-color: #adb5bd;
+}
+</style>

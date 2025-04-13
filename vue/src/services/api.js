@@ -108,7 +108,7 @@ export default {
       id: 0,//ignored
       userId: user.id,
       systemIp: system.ip,
-      resource: rule.resource,//TODO OPERATOR JEI NORESIU :)_)
+      resource: rule.resource,
       usage: rule.usage,
       timestamp: "2025-03-23T14:30:00+00:00"//ignored
     }

@@ -34,7 +34,7 @@ public class NotificationsController : ControllerBase
 
     [HttpGet]
     [Route("latest")]
-    public async Task<ActionResult<NetworkMetric>> GetLatestNotificationByRuleId([FromQuery] int ruleId)
+    public async Task<ActionResult<Notification>> GetLatestNotificationByRuleId([FromQuery] int ruleId)
     {
         try
         {
@@ -42,7 +42,7 @@ public class NotificationsController : ControllerBase
 
             if (notifications == null)
             {
-                return NotFound("No metrics found.");
+                return NotFound("No Notification found.");
             }
             return Ok(notifications[0]);
         }

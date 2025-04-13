@@ -15,17 +15,17 @@
         <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/networkServices`"
           :name="$t('sidebar.networkServices')"
-          icon="tim-icons icon-atom"
+          icon="tim-icons icon-compass-05"
         />
         <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/filemanager`"
           :name="$t('sidebar.filemanager')"
-          icon="tim-icons icon-atom"
+          icon="tim-icons icon-bullet-list-67"
         />
         <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/terminal`"
           :name="$t('sidebar.terminal')"
-          icon="tim-icons icon-atom"
+          icon="tim-icons icon-calendar-60"
         />
         <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/icons`"
@@ -42,11 +42,7 @@
           :name="$t('sidebar.userProfile')"
           icon="tim-icons icon-single-02"
         />
-        <sidebar-link
-          :to="`/systems/${this.$route.params.systemName}/typography`"
-          :name="$t('sidebar.typography')"
-          icon="tim-icons icon-align-center"
-        />
+       
       </template>
     </side-bar>
     <div class="main-panel">

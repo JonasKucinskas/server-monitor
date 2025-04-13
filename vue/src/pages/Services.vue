@@ -65,7 +65,10 @@
               </td>
             </template>
           </base-table>
-          <div v-else>No data available.</div>
+          <div v-else="loading" class="custom-loader-wrapper">
+            <div class="custom-spinner"></div>
+            <p class="mt-3">Loading data...</p>
+          </div>
         </div>
       </card>
     </div>
@@ -291,6 +294,31 @@ th {
   word-wrap: break-word;   
   max-height: 500px;      
   overflow-y: auto;
+}
+
+.custom-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 5rem 0;
+  text-align: center;
+  color: #555;
+}
+
+.custom-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(0, 123, 255, 0.2);
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 </style>

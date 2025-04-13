@@ -39,30 +39,35 @@
       <div class="col-md-4">
         <card class=".full-height">
           <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center">
-            <template v-if="this.notificationRules.length > 0">
+            <template v-if="notificationRules.length > 0">
               <div
-                v-for="(rule, index) in this.notificationRules"
+                v-for="(rule, index) in notificationRules"
                 :key="rule.id"
                 class="row p-3 align-items-center system-panel mb-3 clickable-panel"
                 @click="onNotificationRuleClick(rule)"
               >
-                <div class="col text-center">
-                  <strong>{{ rule.resource }}</strong>
-                  <div>{{ rule.usage }}</div>
+                <div class="col d-flex justify-content-between">
+                  <div class="col text-center">
+                    <p><strong>Resource</strong> {{ rule.resource.toUpperCase() }}</p>
+                  </div>
+                  <div class="col text-center">
+                    <p><strong>Condition</strong> More than</p>
+                  </div>
+                  <div class="col text-center">
+                    <p><strong>Threshold</strong> {{ rule.usage }}%</p>
+                  </div>
                 </div>
                 
-                <div class="col d-flex justify-content-end align-items-center">
-                  <div class="d-flex flex-column align-items-end gap-2">
-                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="showDeleteConfirmation('rule', rule.id)">
-                      <i class="tim-icons icon-simple-remove"></i> Delete
-                    </button>
-                  </div>
+                <div class="d-flex flex-column align-items-end gap-2">
+                  <button class="btn btn-sm btn-primary btn-simple active" @click.stop="showDeleteConfirmation('rule', rule.id)">
+                    <i class="tim-icons icon-simple-remove"></i> Delete
+                  </button>
                 </div>
               </div>
             </template>
             <template v-else>
               <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                <h3>No Notifications</h3>
+                <h3>No Notification Rules</h3>
               </div>
             </template>
           </div>
@@ -76,11 +81,13 @@
               <div v-for="(notification, index) in notifications" :key="index" class="row p-3 align-items-center system-panel mb-3 clickable-panel" @click="showProcesses(notification)">
 
                 <div class="col text-center">
-                  <strong class="notification-resource">{{ notification.resource.toUpperCase() }}</strong>
+                  <p>{{ notification.resource.toUpperCase() }}</p>
                 </div>
                 
                 <div class="col d-flex align-items-center justify-content-center">
-                  <div class="usage-percentage">{{ notification.usage }}%</div>
+                  <div>
+                    <p>{{ notification.usage }}%</p>
+                  </div>
                   <div class="progress" style="width: 100px; margin-left: 10px;">
                     <div
                       class="progress-bar"
@@ -100,9 +107,8 @@
 
                
   
-
                 <div class="col text-center">
-                  <p class="text-muted">{{ formatDate(notification.timestamp) }}</p>
+                  <p>{{ formatDate(notification.timestamp) }}</p>
                 </div>
                 
                 <div class="col text-center">
@@ -120,7 +126,7 @@
                         <th>Time</th>
                         <th>Name</th>
                         <th>CPU (%)</th>
-                        <th>RAM (MB)</th>
+                        <th>RAM (%)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -143,7 +149,7 @@
             </template>
             <template v-else>
               <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                <h4>No Notifications</h4>
+                <h3>No Notifications</h3>
               </div>
             </template>
           </div>
@@ -278,10 +284,6 @@ export default {
     {
       this.onNotificationRuleClick(this.notificationRules[0]);
     }
-
-    this.intervalId = setInterval(() => {
-      this.fetchLatestNotification();
-    }, this.system.updateInterval * 1000);
   },
   
   beforeDestroy() { 
@@ -293,7 +295,7 @@ export default {
       notifications: [],
       selectedNotification: null,
       processes: [],
-      selectedNotificationRule: "",
+      selectedNotificationRule: null,
       intervalId: null,
       showModal: false,
       showDeleteConfirmationModal: false,
@@ -317,7 +319,6 @@ export default {
         this.selectedNotification = notification;
 
         const response = await apiService.getNotificationProcesses(notification.id);
-        console.log(response);
         this.processes = response;
       }
     },
@@ -333,7 +334,7 @@ export default {
         await apiService.deleteNotifications(this.deletionContext.id);
         
         for (let i = 0; i < this.notifications.length; i++) {
-          await apiService.getNotificationProcesses(this.notifications[i].id);;
+          //await apiService.getNotificationProcesses(this.notifications[i].id);;
         }
 
         this.notificationRules = this.notificationRules.filter(rule => rule.id !== this.deletionContext.id);
@@ -342,6 +343,13 @@ export default {
         {
           this.selectedNotificationRule = null;
           this.notifications = [];
+        }
+
+        clearInterval(this.intervalId);
+
+        if (this.notificationRules.length > 0)
+        {
+          this.onNotificationRuleClick(this.notificationRules[0]);
         }
       }
 
@@ -387,11 +395,22 @@ export default {
     },
     async onNotificationRuleClick(notificationRule)
     {
+      if (this.selectedNotificationRule !== null && this.selectedNotificationRule.id === notificationRule.id)
+      {
+        return;
+      }
+      
+      clearInterval(this.intervalId);
+
       this.selectedNotificationRule = notificationRule;
       
       const response = await apiService.getNotifications(notificationRule.id);
       this.notifications = response;
       
+      this.intervalId = setInterval(() => {
+        this.fetchLatestNotification();
+      }, 5000);
+
     },
     closeModal() {
       this.showModal = false;
@@ -430,10 +449,11 @@ export default {
         const addedRule = await apiService.postNotificationRule(rule, this.user, this.system);
         this.notificationRules.push(addedRule);
 
-        if (this.selectedNotification == null)
+        if (this.selectedNotificationRule === null)
         {
-          this.selectedNotification = this.notificationRules[0];
+          this.onNotificationRuleClick(this.notificationRules[0]);
         }
+        
 
         this.closeModal();
         this.notifyVue("Notification Created!");
@@ -476,5 +496,9 @@ body {
 .full-height {
   height: 100vh;
   overflow-y: auto;
+}
+
+.table-bordered {
+  border: #434355;
 }
 </style>

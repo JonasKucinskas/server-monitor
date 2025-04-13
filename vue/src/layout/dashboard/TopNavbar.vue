@@ -20,7 +20,7 @@
             <span class="navbar-toggler-bar bar3"></span>
           </button>
         </div>
-        <a class="navbar-brand" href="">Monitor</a>
+        <a class="navbar-brand" href="/systems">Monitor</a>
       </div>
       <button
         class="navbar-toggler"
@@ -52,32 +52,28 @@
                 data-toggle="dropdown"
                 aria-expanded="true"
               >
-                <div class="notification d-none d-lg-block d-xl-block"></div>
+              <div v-if="notifications.length > 0" class="notification d-none d-lg-block d-xl-block"></div>
                 <i class="tim-icons icon-sound-wave"></i>
                 <p class="d-lg-none">New Notifications</p>
               </a>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item"
-                  >Mike John responded to your email</a
+
+              <li
+                v-for="(notification, index) in notifications"
+                :key="index"
+                class="nav-link"
+              >
+                <a
+                  :href="`/systems/${system.name}/notifications`"
+                  class="nav-item dropdown-item"
                 >
+                  {{ notification.resource.toUpperCase() }} Exceeded usage: {{ notification.usage }}%
+                </a>
               </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item"
-                  >You have 5 more tasks</a
-                >
-              </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item"
-                  >Your friend Michael is in town</a
-                >
-              </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item"
-                  >Another notification</a
-                >
-              </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Another one</a>
+
+              <li v-if="notifications.length === 0" class="nav-link">
+                <a href="#" class="nav-item dropdown-item text-muted">
+                  No new notifications
+                </a>
               </li>
             </base-dropdown>
             <base-dropdown
@@ -117,8 +113,8 @@
 <script>
 import { CollapseTransition } from "vue2-transitions";
 import Modal from "@/components/Modal";
-import apiService from '@/services/api';
-
+import { mapState } from 'vuex';
+import apiService from "@/services/api"; 
 
 export default {
   components: {
@@ -130,13 +126,29 @@ export default {
       const { name } = this.$route;
       return this.capitalizeFirstLetter(name);
     },
+    ...mapState({
+      user: state => state.currentUser,
+      system: state => state.currentSystem,
+    })
+  },
+  async mounted() {
+    const response = await apiService.getNotificationRules(this.system.ip, this.user.id);
+
+    this.notificationRules = response;
+
+    for (let i = 0; i < this.notificationRules.length; i++)
+    {
+      const notif_response = await apiService.getNotifications(this.notificationRules[i].id);
+      this.notifications.push(...notif_response);
+      console.log(notif_response);
+    }
   },
   data() {
     return {
       activeNotifications: false,
       showMenu: false,
       searchModalVisible: false,
-      searchQuery: "",
+      notifications: [],
     };
   },
   methods: {

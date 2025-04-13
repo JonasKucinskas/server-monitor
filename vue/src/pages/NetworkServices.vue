@@ -4,18 +4,15 @@
     <div class="col-md-12">
       <card type="dashboard-header" class="p-2">
         <div class="d-flex justify-content-between align-items-center px-2">
+          <!-- Left side: Title and description -->
           <div>
             <h2 class="card-title mb-1">{{ $t("networkServices.header") }}</h2>
             <p class="mb-0">{{ $t("networkServices.footer") }}</p>
           </div>
 
-          <div class="d-flex align-items-center">
-
-            <button class="btn btn-sm btn-primary btn-simple active" @click="addService()">
-              Add Service
-            </button>
-
-            <div class="mr-2">
+          <!-- Right side: Date picker and button -->
+          <div class="d-flex align-items-center ms-auto">
+            <div class="me-4"> <!-- Increased margin-end for more space -->
               <date-range-picker 
                 v-model="dateRange"
                 :single-date-picker="false"
@@ -34,14 +31,19 @@
                 </template>
               </date-range-picker>
             </div>
+
+            <button class="btn btn-sm btn-primary btn-simple active" @click="addService()">
+              Add Service
+            </button>
           </div>
         </div>
       </card>
     </div>
 
+
     <div :class="this.networkServices.length > 0 ? 'col-md-6' : 'col-md-12'">
-      <card type="task" class="d-flex flex-column justify-content-center align-items-center h-100" style="min-height: 200px;">
-        <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center align-items-center">
+      <card class=".full-height">
+        <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center">
           <template v-if="this.networkServices.length > 0">
             <div v-for="service in this.networkServices" :key="service.id" class="row p-3 align-items-center service-panel mb-3 clickable-panel" @click="handleClick(service.id)">
               <div class="col-md-3">
@@ -343,7 +345,7 @@ export default {
       }
     },
     startAutoUpdate(){
-      //this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+      this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
     },
     async confirmDelete() {
       await this.deleteService(this.selectedService.id);
@@ -678,4 +680,31 @@ export default {
   color: black !important;
 }
 
+.vue-daterange-picker {
+    display: inline-block;
+    width: 100%;
+    max-width: 300px;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.reportrange-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 45px;
+    background-color: #f8f9fa; 
+    color: #212529;            
+    border: 1px solid #ced4da; 
+    border-radius: 0.375rem;  
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.reportrange-text:hover {
+    background-color: #e2e6ea; 
+    border-color: #adb5bd;
+}
 </style>
