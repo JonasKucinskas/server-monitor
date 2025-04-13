@@ -102,7 +102,7 @@ export default {
       throw error; 
     });
   },
-  postNotificationRules(rule, user, system) {
+  postNotificationRule(rule, user, system) {
 
     const cleanRule = {
       id: 0,//ignored
@@ -113,6 +113,21 @@ export default {
       timestamp: "2025-03-23T14:30:00+00:00"//ignored
     }
     return apiClient.post("/notifications/rules", cleanRule) 
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
+  deleteNotificationRule(id) {
+
+    return apiClient.delete("/notifications/rules", {
+      params: { 
+        ruleId: id 
+      }
+    })
     .then(response => {
       return response.data; 
     })

@@ -5,24 +5,32 @@ using Microsoft.AspNetCore.Mvc;
 
 public static class NotificationManager
 {
-    public static List<Process> GetProcessList(List<Notification> notifications, string agentIpAddress, int agentPort)
+    public static List<Process> GetProcessList(Notification notification, string agentIpAddress, int agentPort)
     {
-        //return GetProcessOutputs(data, notifications, agentIpAddress, agentPort);
         List<Process> processes = new List<Process>();
-
-        foreach (var notification in notifications)
+        
+        string sort = "";
+        
+        if (notification.resource == "ram")
         {
-            string sort = notification.resource;//TODO FIX THIS ABBY up
-
-            if (notification.resource == "ram")
-            {
-                sort = "mem";
-            }
-
-            string command = $"ps -eo pid,user,cmd,time,%mem,%cpu --sort=-%{sort} | head -n 8";
-            string output = SshConnection.Instance.RunCmd(agentIpAddress, agentPort, command);
-            processes.AddRange(ParseProcessOutput(output, agentIpAddress, notification.id));
+            sort = "mem";
         }
+        else if (notification.resource == "cpu")
+        {
+            sort = "cpu";
+        }
+        else if (notification.resource == "sensors")
+        {
+            sort = "cpu";
+        }
+        else
+        {
+            return processes;
+        }
+        
+        string command = $"ps -eo pid,user,cmd,time,%mem,%cpu --sort=-%{sort} | head -n 8";
+        string output = SshConnection.Instance.RunCmd(agentIpAddress, agentPort, command);
+        processes.AddRange(ParseProcessOutput(output, agentIpAddress, notification.id));
 
         return processes;
     }

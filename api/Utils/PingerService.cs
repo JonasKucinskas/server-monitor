@@ -32,6 +32,8 @@ public class PingerService : BackgroundService
             }).ToList();
 
             await Task.WhenAll(tasks);
+
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
     }
 }

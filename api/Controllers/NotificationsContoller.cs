@@ -79,7 +79,7 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpPost("rules")]
-    public async Task<ActionResult<SystemData>> InsertNotificationRule([FromBody] NotificationRule rule)
+    public async Task<ActionResult<NotificationRule>> InsertNotificationRule([FromBody] NotificationRule rule)
     {
         try
         {
@@ -88,7 +88,25 @@ public class NotificationsController : ControllerBase
                 return BadRequest("NotificationRule is required.");
             }
 
-            await _dbService.InsertNotificationRuleAsync(rule);
+            var returnedRule = await _dbService.InsertNotificationRuleAsync(rule);
+            return Ok(returnedRule);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"server error: {ex.Message}");
+        }
+    }
+
+    [HttpDelete("rules")]
+    public async Task<ActionResult<SystemData>> DeleteNotificationRule([FromQuery] int ruleId)
+    {
+        try
+        {
+            if (ruleId == null)
+            {
+                return BadRequest("NotificationRule id is required.");
+            }
+            await _dbService.DeleteNotificationRuleByIdAsync(ruleId);
             return Ok();
         }
         catch (Exception ex)

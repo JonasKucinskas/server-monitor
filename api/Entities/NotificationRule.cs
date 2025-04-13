@@ -14,7 +14,8 @@ public class NotificationRule
     {
         await using var cmd = new NpgsqlCommand(@"
             INSERT INTO notification_rules (user_id, system_ip, resource, usage)
-            VALUES (@user_id, @system_ip, @resource, @usage);
+            VALUES (@user_id, @system_ip, @resource, @usage)
+            RETURNING id, timestamp;
         ", conn);
 
         cmd.Parameters.AddWithValue("user_id", userId);
@@ -22,6 +23,11 @@ public class NotificationRule
         cmd.Parameters.AddWithValue("resource", resource);
         cmd.Parameters.AddWithValue("usage", usage);
 
-        await cmd.ExecuteNonQueryAsync();
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            id = reader.GetInt32(0);
+            timestamp = reader.GetDateTime(1);
+        }
     }
 }

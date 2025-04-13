@@ -989,11 +989,12 @@ public class Database
         await SshConnection.Instance.StartSendingRequests(system.ip, system.port, "monitor", system.updateInterval);
     }
 
-    public async Task InsertNotificationRuleAsync(NotificationRule rule)
+    public async Task<NotificationRule> InsertNotificationRuleAsync(NotificationRule rule)
     {
         await OpenConnAsync();
         await rule.InsertToDatabase(conn);
         await CloseConnAsync();
+        return rule;
     }
 
     public async Task DeleteSystemAsync(int id)
@@ -1014,6 +1015,19 @@ public class Database
         await OpenConnAsync();
 
         await using var cmd = new NpgsqlCommand(@"DELETE FROM notifications WHERE notification_rule_id = @ruleid;", conn);
+
+        cmd.Parameters.AddWithValue("ruleid", ruleid);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
+    public async Task DeleteNotificationRuleByIdAsync(int ruleid)
+    {
+        await OpenConnAsync();
+
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM notification_rules WHERE id = @ruleid;", conn);
 
         cmd.Parameters.AddWithValue("ruleid", ruleid);
 
@@ -1066,11 +1080,12 @@ public class Database
         await CloseConnAsync();
     }
 
-    public async Task InsertNotificationAsync(Notification notification)
+    public async Task<Notification> InsertNotificationAsync(Notification notification)
     {
         await OpenConnAsync();
         await notification.InsertToDatabase(conn);
         await CloseConnAsync();
+        return notification;
     }
 
     public async Task UpdateNetworkService(NetworkService service)

@@ -25,7 +25,7 @@
                 <p class="mb-0">{{ $t("notifications.footer") }}</p>
             </div>
             <div v-if="this.notifications.length > 0" class="d-flex align-items-center">
-              <button class="btn btn-sm btn-danger btn-simple active" @click="showDeleteConfirmation()">
+              <button class="btn btn-sm btn-danger btn-simple active" @click="showDeleteConfirmation('notifications')">
                 Clear All
               </button>
             </div>
@@ -53,10 +53,7 @@
                 
                 <div class="col d-flex justify-content-end align-items-center">
                   <div class="d-flex flex-column align-items-end gap-2">
-                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="editSystem(system)">
-                      <i class="tim-icons icon-settings-gear-63"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="showDeleteConfirmation()">
+                    <button class="btn btn-sm btn-primary btn-simple active w-100" @click.stop="showDeleteConfirmation('rule', rule.id)">
                       <i class="tim-icons icon-simple-remove"></i> Delete
                     </button>
                   </div>
@@ -76,7 +73,7 @@
         <card class=".full-height">
           <div class="container-fluid w-100 h-100 d-flex flex-column justify-content-center">
             <template v-if="notifications.length > 0">
-              <div v-for="(notification, index) in notifications" :key="index" class="row p-3 align-items-center system-panel mb-3 clickable-panel">
+              <div v-for="(notification, index) in notifications" :key="index" class="row p-3 align-items-center system-panel mb-3 clickable-panel" @click="showProcesses(notification)">
 
                 <div class="col text-center">
                   <strong class="notification-resource">{{ notification.resource.toUpperCase() }}</strong>
@@ -101,6 +98,9 @@
                   </div>
                 </div>
 
+               
+  
+
                 <div class="col text-center">
                   <p class="text-muted">{{ formatDate(notification.timestamp) }}</p>
                 </div>
@@ -110,6 +110,35 @@
                     <i class="tim-icons icon-simple-remove"></i> Dismiss
                   </button>
                 </div>
+
+                <div v-if="selectedNotification && selectedNotification.id === notification.id" class="w-100 mt-3">
+                  <table class="table table-bordered table-striped">
+                    <thead>
+                      <tr>
+                        <th>PID</th>
+                        <th>User</th>
+                        <th>Time</th>
+                        <th>Name</th>
+                        <th>CPU (%)</th>
+                        <th>RAM (MB)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="process in processes.slice(0, 8)" :key="process.pid">
+                        <td>{{ process.pid }}</td>
+                        <td>{{ process.process_user }}</td>
+                        <td>{{ process.process_time }}</td>
+                        <td>{{ process.name }}</td>
+                        <td>{{ process.cpu_usage }}</td>
+                        <td>{{ process.ram_usage }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+
+
+
               </div>
             </template>
             <template v-else>
@@ -196,13 +225,13 @@
 
 
       <Modal
-      :show="showDeleteConfirmationModal"
-      @close="closeDeleteConfirmationModal"
-      type="notice"
-      :centered="true"
-      gradient="danger"
-      modalClasses="custom-modal-class"
-      :animationDuration="300"
+        :show="showDeleteConfirmationModal"
+        @close="closeDeleteConfirmationModal"
+        type="notice"
+        :centered="true"
+        gradient="danger"
+        modalClasses="custom-modal-class"
+        :animationDuration="300"
       >
         <template v-slot:header>
           <h5 class="modal-title">Confirm Deletion</h5>
@@ -210,10 +239,14 @@
 
         <template v-slot:footer>
           <button class="btn btn-secondary" @click="closeDeleteConfirmationModal">Cancel</button>
-          <button class="btn btn-danger" @click="clearAllNotifications()">Delete</button>
+          <button class="btn btn-danger" @click="handleDeleteConfirmation()">Delete</button>
         </template>
 
-        <p>Are you sure you want to clear all notifications?</p>
+        <p>
+          {{ deletionContext.type === 'notifications' 
+              ? 'Are you sure you want to clear all notifications?' 
+              : 'Are you sure you want to delete this notification rule?' }}
+        </p>
       </Modal>
 
     </div>
@@ -258,6 +291,8 @@ export default {
     return {
       notificationRules: [],
       notifications: [],
+      selectedNotification: null,
+      processes: [],
       selectedNotificationRule: "",
       intervalId: null,
       showModal: false,
@@ -267,20 +302,71 @@ export default {
         ramThreshhold: '',
         cpuThreshhold: '',
       },
+      deletionContext: {
+        type: '',  
+        id: null  
+      },
     };
   },
   methods: {
+    async showProcesses(notification) {
+      if (this.selectedNotification && this.selectedNotification.id === notification.id) {
+        this.selectedNotification = null;
+        this.processes = [];
+      } else {
+        this.selectedNotification = notification;
+
+        const response = await apiService.getNotificationProcesses(notification.id);
+        console.log(response);
+        this.processes = response;
+      }
+    },
+    async handleDeleteConfirmation() {
+      if (this.deletionContext.type === 'notifications') 
+      {
+        await apiService.deleteNotifications(this.selectedNotificationRule.id);
+        this.notifications = [];
+      } 
+      else if (this.deletionContext.type === 'rule') 
+      {
+        await apiService.deleteNotificationRule(this.deletionContext.id);
+        await apiService.deleteNotifications(this.deletionContext.id);
+        
+        for (let i = 0; i < this.notifications.length; i++) {
+          await apiService.getNotificationProcesses(this.notifications[i].id);;
+        }
+
+        this.notificationRules = this.notificationRules.filter(rule => rule.id !== this.deletionContext.id);
+
+        if (this.selectedNotificationRule?.id === this.deletionContext.id)
+        {
+          this.selectedNotificationRule = null;
+          this.notifications = [];
+        }
+      }
+
+      this.closeDeleteConfirmationModal();
+    },
     async fetchLatestNotification()
     {
       const response = await apiService.getLatestNotification(this.selectedNotificationRule.id);
-      
 
-      if (response.id !== this.notifications[0].id)
+      if (response === null)
+      {
+        return;  
+      }
+
+      if (this.notifications.length === 0)
+      {
+        this.notifications.unshift(response);
+      }
+      else if (response.id !== this.notifications[0].id)
       {
         this.notifications.unshift(response);
       }
     },
-    showDeleteConfirmation() {
+    showDeleteConfirmation(type, id = null) {
+      this.deletionContext = { type, id };
       this.showDeleteConfirmationModal = true;
     },
     closeDeleteConfirmationModal() {
@@ -317,8 +403,6 @@ export default {
     async handleSubmit() {
       this.formErrors = {};
 
-      console.log("in submit");
-
       let isValid = true;
       if(!this.formData.component) {
         this.formErrors.component = 'This field is required.';
@@ -343,9 +427,14 @@ export default {
           usage: this.formData.usage,
         }
 
-        console.log(this.formData);
+        const addedRule = await apiService.postNotificationRule(rule, this.user, this.system);
+        this.notificationRules.push(addedRule);
 
-        await apiService.postNotificationRules(rule, this.user, this.system);
+        if (this.selectedNotification == null)
+        {
+          this.selectedNotification = this.notificationRules[0];
+        }
+
         this.closeModal();
         this.notifyVue("Notification Created!");
       }

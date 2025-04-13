@@ -99,14 +99,13 @@ public sealed class SshConnection
                     {
                         foreach (var notification in notifications)
                         {
-                            await _dbService.InsertNotificationAsync(notification);
-                        }
+                            Notification addedNotification = await _dbService.InsertNotificationAsync(notification);
+                            List<Process> processes = NotificationManager.GetProcessList(addedNotification, agentIpAddress, agentPort);
 
-                        List<Process> processes = NotificationManager.GetProcessList(notifications, agentIpAddress, agentPort);
-                        
-                        foreach (var process in processes)
-                        {
-                            await _dbService.InsertProcess(process);
+                            foreach (var process in processes)
+                            {
+                                await _dbService.InsertProcess(process);
+                            }
                         }
                     }
 

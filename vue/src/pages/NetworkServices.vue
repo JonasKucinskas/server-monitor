@@ -343,7 +343,7 @@ export default {
       }
     },
     startAutoUpdate(){
-      this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
+      //this.intervalId = setInterval(() => { this.updatePage(); }, this.selectedService.interval * 1000);
     },
     async confirmDelete() {
       await this.deleteService(this.selectedService.id);
