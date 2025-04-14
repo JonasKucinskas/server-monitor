@@ -26,6 +26,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu h-4 w-4"><rect width="16" height="16" x="4" y="4" rx="2"></rect><rect width="6" height="6" x="9" y="9" rx="1"></rect><path d="M15 2v2"></path><path d="M15 20v2"></path><path d="M2 15h2"></path><path d="M2 9h2"></path><path d="M20 15h2"></path><path d="M20 9h2"></path><path d="M9 2v2"></path><path d="M9 20v2"></path></svg>              
                 {{ this.apiData[0]?.cpuName }}
               </p>
+              <p class="mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-name="Layer 1"><path fill="white" d="m127.738 512h256.524a16 16 0 0 0 16-16v-429.085a16 16 0 0 0 -16-16h-57.2v-34.915a16 16 0 0 0 -16-16h-110.123a16 16 0 0 0 -16 16v34.915h-57.2a16 16 0 0 0 -16 16v429.085a16 16 0 0 0 15.999 16zm89.2-480h78.122v18.915h-78.121zm-73.2 50.915h224.524v397.085h-224.524zm160.53 191.154a16 16 0 0 1 -1.086 16.565l-68.15 97.328a16 16 0 1 1 -26.213-18.354l50.521-72.151h-37.414a16 16 0 0 1 -13.107-25.178l68.15-97.328a16 16 0 0 1 26.213 18.355l-50.521 72.151h37.414a16 16 0 0 1 14.193 8.612z"/></svg>              
+                {{ this.apiData[0]?.batteryCapacity }}%, {{ this.apiData[0]?.batteryStatus }}
+              </p>
             </div>
           </div>
 
@@ -259,6 +263,32 @@
           </card>
         </div>
       </div>
+
+      <div class="row">
+        <div class="col-12">
+          <card type="chart" ref="bigChartCard">
+            <template slot="header">
+              <div class="row">
+                <div class="col-sm-6 text-left">
+                  <h2 class="card-title">{{ $t("dashboard.batteryHeader") }}</h2>
+                  <h5 class="card-category"> {{ $t("dashboard.batteryFooter") }} </h5>
+                </div>
+              </div>
+            </template>
+            <div class="chart-area">
+              <line-chart
+                style="height: 100%"
+                ref="batteryChart"
+                chart-id="battery-chart"
+                :chart-data="batteryChart.chartData"
+                :gradient-colors="batteryChart.gradientColors"
+                :gradient-stops="batteryChart.gradientStops"
+                :extra-options="batteryChart.extraOptions"
+              />
+            </div>
+          </card>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -287,8 +317,8 @@ export default {
       maxDate: "",
       loading: true,
       dateRange: { //todo
-        startDate: '2025-03-18', 
-        endDate: '2025-03-19' 
+        startDate: '2025-04-14', 
+        endDate: '2025-04-15' 
       },
       localeData: {
         format: 'YYYY-MM-DD',
@@ -333,6 +363,17 @@ export default {
           labels: [],
         },
         extraOptions: chartConfigs.sensorChartOptions,
+        gradientColors: config.colors.primaryGradient,
+        gradientStops: [1, 0.4, 0],
+        categories: [],
+      },
+      batteryChart: {
+        allData: [],
+        chartData: {
+          datasets: [{}],
+          labels: [],
+        },
+        extraOptions: chartConfigs.batteryChartOptions,
         gradientColors: config.colors.primaryGradient,
         gradientStops: [1, 0.4, 0],
         categories: [],
@@ -511,13 +552,13 @@ export default {
         chartData.datasets.push(
         {
           fill: true,
-          borderColor: config.colors.primary,
+          borderColor: colors[1],
           borderWidth: 2,
           borderDash: [],
           borderDashOffset: 0.0,
-          pointBackgroundColor: config.colors.primary,
+          pointBackgroundColor: colors[1],
           pointBorderColor: "rgba(255,255,255,0)",
-          pointHoverBackgroundColor: config.colors.primary,
+          pointHoverBackgroundColor: colors[1],
           pointBorderWidth: 20,
           pointHoverRadius: 4,
           pointHoverBorderWidth: 15,
@@ -536,14 +577,15 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
 
       this.cpuChart.chartData = chartData;  
       this.cpuChart.activeIndex = index;
     },
+    
     initNetworkChart(index) 
     {
       const colors = [
@@ -553,10 +595,6 @@ export default {
         'rgba(75, 192, 192, 1)', // green
         'rgba(153, 102, 255, 1)', // purple
         'rgba(255, 159, 64, 1)',
-        'rgba(255, 159, 64, 1)',
-        'rgba(255, 159, 64, 1)',
-        'rgba(255, 159, 64, 1)',
-        'rgba(255, 159, 64, 1)'
       ];
 
       let chartData = {
@@ -631,9 +669,9 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
 
       this.networkChart.chartData = chartData;
@@ -689,9 +727,9 @@ export default {
       
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
 
       this.networkChart.chartData = chartData;
@@ -740,12 +778,57 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
 
       this.sensorChart.chartData = chartData;  
+    },
+    initBatteryChart() {
+      let chartData = {
+        datasets: [],
+        labels: [],
+      };
+
+      const colors = [
+        'rgba(255, 99, 132, 1)', // red
+        'rgba(54, 162, 235, 1)', // blue
+        'rgba(255, 206, 86, 1)', // yellow
+        'rgba(75, 192, 192, 1)', // green
+        'rgba(153, 102, 255, 1)', // purple
+        'rgba(255, 159, 64, 1)'  // orange
+      ];
+
+      const generateDataset = (color) => ({
+        fill: true,
+        borderColor: color,
+        borderWidth: 2,
+        borderDash: [],
+        borderDashOffset: 0.0,
+        pointBackgroundColor: color,
+        pointBorderColor: "rgba(255,255,255,0)",
+        pointHoverBackgroundColor: color,
+        pointBorderWidth: 20,
+        pointHoverRadius: 4,
+        pointHoverBorderWidth: 15,
+        pointRadius: 4,
+        label: "Battery charge: ",
+        data: this.apiData.map(metrics => metrics.batteryCapacity)
+      });
+      
+      chartData.datasets.push(generateDataset(colors[4]));
+
+      this.$refs.batteryChart.updateGradients(chartData);
+
+      chartData.labels = this.apiData.map(metrics => {
+        const date = new Date(metrics.time);
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      });
+
+      this.batteryChart.chartData = chartData;  
     },
     initDiskChart() 
     {
@@ -772,9 +855,9 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
       this.diskChart.chartData = chartData;
     },
@@ -806,9 +889,9 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
       
       this.ramChart.chartData = chartData;
@@ -838,9 +921,9 @@ export default {
 
       chartData.labels = this.apiData.map(metrics => {
         const date = new Date(metrics.time);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); 
-        const day = date.getDate().toString().padStart(2, '0');
-        return month + '-' + day;
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
       
       this.swapChart.chartData = chartData;
@@ -868,6 +951,7 @@ export default {
     //fetch metrics objects
     try {
       this.apiData = await apiService.getMetrics(this.systemInfo.name, null);
+      console.log(this.apiData);
     } catch (error) {
       console.error("API Error:", error);
     } 
@@ -879,13 +963,13 @@ export default {
 
     this.loading = false;
     this.$nextTick(() => {
-        // Now refs are accessible
       this.initCpuChart(0);
       this.initSensorChart();
       this.initRamChart();
       this.initNetworkChart(0);
       this.initDiskChart();
       this.initSwapChart();
+      this.initBatteryChart();
     })
 
     

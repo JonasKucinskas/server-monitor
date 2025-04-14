@@ -4,15 +4,13 @@
     <div class="col-md-12">
       <card type="dashboard-header" class="p-2">
         <div class="d-flex justify-content-between align-items-center px-2">
-          <!-- Left side: Title and description -->
           <div>
             <h2 class="card-title mb-1">{{ $t("networkServices.header") }}</h2>
             <p class="mb-0">{{ $t("networkServices.footer") }}</p>
           </div>
 
-          <!-- Right side: Date picker and button -->
           <div class="d-flex align-items-center ms-auto">
-            <div class="me-4"> <!-- Increased margin-end for more space -->
+            <div class="me-4"> 
               <date-range-picker 
                 v-model="dateRange"
                 :single-date-picker="false"

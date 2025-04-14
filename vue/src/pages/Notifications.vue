@@ -357,7 +357,13 @@ export default {
     },
     async fetchLatestNotification()
     {
-      const response = await apiService.getLatestNotification(this.selectedNotificationRule.id);
+      let response = null;
+      try{
+        response = await apiService.getLatestNotification(this.selectedNotificationRule.id);
+      }
+      catch{
+
+      }
 
       if (response === null)
       {
@@ -409,7 +415,7 @@ export default {
       
       this.intervalId = setInterval(() => {
         this.fetchLatestNotification();
-      }, 5000);
+      }, this.system.updateInterval * 1000);
 
     },
     closeModal() {

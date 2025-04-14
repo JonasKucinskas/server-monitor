@@ -40,9 +40,9 @@ public class NotificationsController : ControllerBase
         {
             var notifications = await _dbService.FetchNotificationsByRuleIdAsync(ruleId, 1);//single return
 
-            if (notifications == null)
+            if (notifications.Count == 0)
             {
-                return NotFound("No Notification found.");
+                return NotFound("No Notifications found.");
             }
             return Ok(notifications[0]);
         }

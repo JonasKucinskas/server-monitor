@@ -12,9 +12,12 @@
     "sensorUsageFooter": "Values of system sensors",
     "cpuUsageHeader": "CPU Usage",
     "cpuUsageFooter": "Average system-wide CPU utilization",
+    "batteryHeader": "Battery",
+    "batteryFooter": "Battery charge percentage",
     "cpuChartCategories": ["Overall Usage", "All Cores", "Frequency"],
     "networkChartCategories": ["Overall Usage", "All Interfaces"],
     "networkChartExtraCategories": ["Download", "Upload"]
+    
   },
   "services": {
     "header": "Services",
