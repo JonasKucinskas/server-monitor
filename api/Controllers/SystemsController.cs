@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims; 
+
 
 [ApiController]
 [Authorize]
@@ -84,7 +86,9 @@ public class SystemsController : ControllerBase
     {
         try
         {
-            await _dbService.DeleteSystemAsync(id);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await _dbService.DeleteSystemAsync(id, int.Parse(userId));
             return Ok();
         }
         catch (Exception ex)
@@ -94,16 +98,23 @@ public class SystemsController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<ActionResult<SystemData>> UpdateSystem([FromBody] SystemData newService)
+    public async Task<ActionResult<SystemData>> UpdateSystem([FromBody] SystemData newSystem)
     {
         try
         {
-            if (newService == null)
+            if (newSystem == null)
             {
                 return BadRequest("Service data is null.");
             }
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            await _dbService.UpdateSystem(newService);
+            if (userId != newSystem.ownerId.ToString())
+            {
+                return Unauthorized();
+            }
+
+
+            await _dbService.UpdateSystem(newSystem, int.Parse(userId));
             return Ok();
         }
         catch (Exception ex)

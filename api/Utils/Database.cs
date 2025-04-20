@@ -229,6 +229,47 @@ public class Database
         return user;
     }
 
+    public async Task<User> GetUserById(int id)
+    {
+        await OpenConnAsync();
+        
+        string query = @"
+            SELECT * FROM users WHERE id = @id;
+        ";
+
+        await using var cmd = new NpgsqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("id", id);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        User user = null;
+
+        try
+        {
+            if (await reader.ReadAsync())
+            {
+                user = new User
+                {
+                    id = reader.GetInt32(reader.GetOrdinal("id")),
+                    username = reader.GetString(reader.GetOrdinal("username")),
+                    password = reader.GetString(reader.GetOrdinal("password_hash")),
+                    creationDate = reader.GetDateTime(reader.GetOrdinal("created_at"))
+                };
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error finding user: {ex.Message}");
+        }
+        finally
+        {
+            await reader.CloseAsync();
+            await CloseConnAsync();
+        }
+
+        return user;
+    }
+
     public async Task<bool> DoesUserExist(string username)
     {
         await OpenConnAsync();
@@ -997,18 +1038,37 @@ public class Database
         return rule;
     }
 
-    public async Task DeleteSystemAsync(int id)
+    public async Task DeleteSystemAsync(int id, int userid)
     {
         await OpenConnAsync();
 
-        await using var cmd = new NpgsqlCommand(@"DELETE FROM servers WHERE server_id = @Id;", conn);
+        await using var cmd = new NpgsqlCommand(@"DELETE FROM servers WHERE server_id = @Id AND owner_user_id = @userid;", conn);
 
         cmd.Parameters.AddWithValue("Id", id);
+        cmd.Parameters.AddWithValue("userid", userid);
 
         await cmd.ExecuteNonQueryAsync();
         
         await CloseConnAsync();
     }
+
+    public async Task UpdateUserPasswordAsync(User user)
+    {
+        await OpenConnAsync();
+    
+        await using var cmd = new NpgsqlCommand(@"
+            UPDATE users
+            SET password_hash = @newPassword
+            WHERE id = @userId;", conn);
+
+        cmd.Parameters.AddWithValue("newPassword", user.password);
+        cmd.Parameters.AddWithValue("userId", user.id);
+
+        await cmd.ExecuteNonQueryAsync();
+        
+        await CloseConnAsync();
+    }
+
 
     public async Task DeleteNotificationsByRuleIdAsync(int ruleid)
     {
@@ -1049,18 +1109,19 @@ public class Database
         await CloseConnAsync();
     }
 
-    public async Task UpdateSystem(SystemData system)
+    public async Task UpdateSystem(SystemData system, int userid)
     {
         await OpenConnAsync();
         
         await using var cmd = new NpgsqlCommand(@"UPDATE servers 
-        SET system_name = @name, server_ip = @ip, server_port = @port, interval = @interval WHERE server_id = @id;", conn);
+        SET system_name = @name, server_ip = @ip, server_port = @port, interval = @interval WHERE server_id = @id AND owner_user_id = @owner_id;", conn);
 
         cmd.Parameters.AddWithValue("name", system.name);
         cmd.Parameters.AddWithValue("ip", system.ip);
         cmd.Parameters.AddWithValue("port", system.port);
         cmd.Parameters.AddWithValue("interval", system.updateInterval);
         cmd.Parameters.AddWithValue("id", system.id);
+        cmd.Parameters.AddWithValue("owner_id", userid);
         
         await cmd.ExecuteNonQueryAsync();
         await CloseConnAsync();

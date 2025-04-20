@@ -28,19 +28,9 @@
           icon="tim-icons icon-calendar-60"
         />
         <sidebar-link
-          :to="`/systems/${this.$route.params.systemName}/icons`"
-          :name="$t('sidebar.icons')"
-          icon="tim-icons icon-atom"
-        />
-        <sidebar-link
           :to="`/systems/${this.$route.params.systemName}/notifications`"
           :name="$t('sidebar.notifications')"
           icon="tim-icons icon-bell-55"
-        />
-        <sidebar-link
-          :to="`/systems/${this.$route.params.systemName}/profile`"
-          :name="$t('sidebar.userProfile')"
-          icon="tim-icons icon-single-02"
         />
        
       </template>

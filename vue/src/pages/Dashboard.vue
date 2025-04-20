@@ -28,7 +28,7 @@
               </p>
               <p class="mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-name="Layer 1"><path fill="white" d="m127.738 512h256.524a16 16 0 0 0 16-16v-429.085a16 16 0 0 0 -16-16h-57.2v-34.915a16 16 0 0 0 -16-16h-110.123a16 16 0 0 0 -16 16v34.915h-57.2a16 16 0 0 0 -16 16v429.085a16 16 0 0 0 15.999 16zm89.2-480h78.122v18.915h-78.121zm-73.2 50.915h224.524v397.085h-224.524zm160.53 191.154a16 16 0 0 1 -1.086 16.565l-68.15 97.328a16 16 0 1 1 -26.213-18.354l50.521-72.151h-37.414a16 16 0 0 1 -13.107-25.178l68.15-97.328a16 16 0 0 1 26.213 18.355l-50.521 72.151h37.414a16 16 0 0 1 14.193 8.612z"/></svg>              
-                {{ this.apiData[0]?.batteryCapacity }}%, {{ this.apiData[0]?.batteryStatus }}
+                {{ this.apiData[this.apiData.length - 1]?.batteryCapacity }}%, {{ this.apiData[this.apiData.length - 1]?.batteryStatus }}
               </p>
             </div>
           </div>

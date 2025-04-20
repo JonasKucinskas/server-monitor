@@ -226,6 +226,22 @@ export default {
       throw error; 
     });
   },
+  updateUser(oldpass, newpass)
+  {
+    const details = {
+      OldPassword: oldpass,
+      newPassword: newpass,
+    };
+
+    return apiClient.post("/auth/change-password", details)
+    .then(response => {
+      return response.data; 
+    })
+    .catch(error => {
+      console.error("Error executing command:", error);
+      throw error; 
+    });
+  },
   getLatestNetworkServicePing(serviceId)
   {
     return apiClient.get("/networkServices/pings/latest", {

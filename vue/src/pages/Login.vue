@@ -36,6 +36,7 @@
 <script>
 import apiService from '@/services/api';
 import { mapState, mapActions } from 'vuex';
+import NotificationTemplate from "./Notifications/NotificationTemplate";
 
 export default {
   data() {
@@ -48,14 +49,29 @@ export default {
   methods: {
     async handleLogin() {
       
-      try{
+      try
+      {
         const response = await apiService.login(this.username, this.password)
         await this.$store.dispatch('fetchUserDetails', response.user);
         this.$router.push('/'); 
       }
-      catch{
-
+      catch
+      {
+        this.notifyVue('Incorrect password');
       }
+    
+    },
+    notifyVue(message) {
+      this.$notify({
+        component: NotificationTemplate,
+        message: message,
+        icon: "ticon",
+        icon: "tim-icons icon-bell-55",
+        horizontalAlign: 'center',
+        verticalAlign: 'top',
+        type: "danger",
+        timeout: 3000,
+      });
     },
     goToRegister() {
       this.$router.push('/register');

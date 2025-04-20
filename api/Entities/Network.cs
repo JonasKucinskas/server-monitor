@@ -2,10 +2,6 @@ using Npgsql;
 public class Network
 {
     public List<NetworkMetric> Metrics { get; set; }
-    public Network()
-    {
-        Metrics = [];
-    }
 }
 
 public class NetworkMetric
