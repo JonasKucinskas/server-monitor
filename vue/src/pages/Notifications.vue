@@ -177,7 +177,7 @@
         <form @submit.prevent="handleSubmit">
           <div class="form-group row">
 
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label for="component">Component</label>
               <select
                 v-model="formData.component"
@@ -197,23 +197,7 @@
               <div v-if="formErrors.component" class="invalid-feedback">{{ formErrors.component }}</div>
             </div>
 
-            <div class="col-md-4">
-              <label for="operator">Operator</label>
-              <select
-                v-model="formData.operator"
-                class="form-control"
-                id="operator"
-                :class="{ 'is-invalid': formErrors.operator }"
-                required
-              >
-                <option disabled value="">Select operator</option>
-                <option value="greater">More than</option>
-                <option value="less">Less than</option>
-              </select>
-              <div v-if="formErrors.operator" class="invalid-feedback">{{ formErrors.operator }}</div>
-            </div>
-
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label for="threshold">Usage %</label>
               <input
                 v-model="formData.usage"

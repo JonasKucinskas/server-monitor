@@ -50,3 +50,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run("http://localhost:9000");
+
+public partial class Program { }

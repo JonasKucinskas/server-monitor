@@ -140,7 +140,7 @@ public static class NotificationManager
                     }
                     break;
                 case "swap":
-                    var swapUsage = data.Ram.SwapFree * 100 / data.Ram.SwapTotal;
+                    var swapUsage = data.Ram.SwapTotal * data.Ram.SwapFree / 100;
                     if (swapUsage >= rule.usage)
                     {
                         Notification notification = new Notification()

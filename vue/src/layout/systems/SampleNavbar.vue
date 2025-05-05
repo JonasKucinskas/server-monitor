@@ -77,7 +77,7 @@
             </base-dropdown>
             <base-dropdown
               tag="li"
-              :menu-on-right=true
+              :menu-on-right="true"
               title-tag="a"
               class="nav-item"
               menu-classes="dropdown-navbar"

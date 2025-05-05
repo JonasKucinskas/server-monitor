@@ -11,13 +11,12 @@ using Org.BouncyCastle.Tls;
 public class SshConnection
 {
     private static string _hubPublicKey;
-    private static string _agentPrivateKeyPath; 
 
-    public static void StartServer(string pub, string _agentPrivateKeyPath)
+    public static void StartServer(string pub, string _agentPrivateKeyPath, int port)
     {
-        _hubPublicKey = File.ReadAllText(pub);
+        _hubPublicKey = pub;
 
-        StartingInfo info = new StartingInfo(IPAddress.Any, 12345, "SSH-2.0-Welcome");
+        StartingInfo info = new StartingInfo(IPAddress.Any, port, "SSH-2.0-Welcome");
         var server = new SshServer(info);
 
         var agentPrivateKey = File.ReadAllText(_agentPrivateKeyPath);

@@ -91,7 +91,7 @@
                 aria-expanded="true"
               >
                 <div class="photo">
-                  <img src="img/anime3.png" />
+                  <img src="/img/anime3.png" />
                 </div>
                 <b class="caret d-none d-lg-block d-xl-block"></b>
                 <p class="d-lg-none">Log out</p>

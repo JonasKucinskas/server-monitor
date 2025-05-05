@@ -21,9 +21,7 @@ KEY=""
 # Check for help flag
 case "$1" in
 -h | --help)
-  printf "monitor-agent installation script\n\n"
-  printf "Usage: ./install.sh [options]\n\n"
-  printf "Options: \n"
+  printf "monitor installation script\n\n"
   printf "  -k                    : SSH key (required, or interactive if not provided)\n"
   printf "  -p                    : Port (default: $PORT)\n"
   printf "  -u                    : Uninstall monitor agent\n"
@@ -134,7 +132,7 @@ fi
 # Create a dedicated user for the service if it doesn't exist
 
 if ! id -u monitor >/dev/null 2>&1; then
-    echo "Creating a dedicated user for the monitor-agent service..."
+    echo "Creating a dedicated user for the monito service..."
     useradd -M -s /bin/false monitor
 fi
 

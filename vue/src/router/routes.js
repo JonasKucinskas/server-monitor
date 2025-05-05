@@ -7,8 +7,6 @@ import NotFound from "@/pages/NotFoundPage.vue"
 const Dashboard = () => import("@/pages/Dashboard.vue");
 const Settings = () => import("@/pages/Settings.vue");
 const Notifications = () => import("@/pages/Notifications.vue");
-const Icons = () => import("@/pages/Icons.vue");
-const Typography = () => import("@/pages/Typography.vue");
 const Services = () => import("@/pages/Services.vue");
 const Systems = () => import("@/pages/Systems.vue");
 const NetworkServices = () => import("@/pages/NetworkServices.vue");
@@ -26,8 +24,6 @@ const routes = [
     children: [
       { path: "dashboard", name: "dashboard", component: Dashboard, meta: { requiresAuth: true }},
       { path: "notifications", name: "notifications", component: Notifications, meta: { requiresAuth: true } },
-      { path: "icons", name: "icons", component: Icons, meta: { requiresAuth: true } },
-      { path: "typography", name: "typography", component: Typography, meta: { requiresAuth: true } },
       { path: "services", name: "services", component: Services, meta: { requiresAuth: true } },
       { path: "networkServices", name: "networkServices", component: NetworkServices, meta: { requiresAuth: true } },
       { path: "terminal", name: "terminal", component: Terminal, meta: { requiresAuth: true } },
